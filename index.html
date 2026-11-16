@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#04060c">
+  <meta name="description" content="Tarayıcıda gezilebilir, etkileşimli 3B Güneş Sistemi.">
+  <title>Güneş Sistemi</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f5b461'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5' fill='none' stroke='%23f5b461' stroke-opacity='.6' stroke-width='1.4' transform='rotate(-24 16 16)'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 3B sahne: tuval ve etiket katmanı buraya eklenir -->
+  <div id="sahne" aria-label="Güneş Sistemi 3B sahnesi"></div>
+  <div class="vinyet" aria-hidden="true"></div>
+
+  <!-- Açılış ekranı -->
+  <div id="yukleme" role="status" aria-live="polite">
+    <div class="yukleme-ic">
+      <svg class="yukleme-logo" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="9" fill="currentColor"/>
+        <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="1.2" transform="rotate(-24 32 32)"/>
+        <circle cx="57.4" cy="20.8" r="2.2" fill="currentColor"/>
+      </svg>
+      <h1>Güneş Sistemi</h1>
+      <p class="yukleme-alt">Etkileşimli 3B keşif</p>
+      <div class="ilerleme"><div class="ilerleme-dolgu" id="ilerleme-dolgu"></div></div>
+      <p class="yukleme-durum" id="yukleme-durum">Dokular yükleniyor…</p>
+    </div>
+  </div>
+
+  <!-- Üst çubuk -->
+  <header class="ust">
+    <div class="marka">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="9" fill="currentColor"/>
+        <ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="2" transform="rotate(-24 32 32)"/>
+        <circle cx="57.4" cy="20.8" r="2.6" fill="currentColor"/>
+      </svg>
+      <div class="marka-yazi">
+        <strong>Güneş Sistemi</strong>
+        <span>Etkileşimli 3B keşif</span>
+      </div>
+    </div>
+
+    <div class="zaman cam" role="group" aria-label="Zaman denetimi">
+      <button class="dugme dugme-yuvarlak" id="dugme-oynat" type="button" aria-label="Duraklat" title="Duraklat / oynat (Boşluk)">
+        <svg class="simge-duraklat" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.6" height="14" rx="1"/><rect x="13.9" y="5" width="3.6" height="14" rx="1"/></svg>
+        <svg class="simge-oynat" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l11-6.8a.8.8 0 0 0 0-1.4l-11-6.8A.8.8 0 0 0 8 5.2z"/></svg>
+      </button>
+      <div class="hiz">
+        <input type="range" id="hiz-kaydirici" min="0" max="1000" step="1" value="490" aria-label="Simülasyon hızı">
+        <div class="hiz-yazi">
+          <span id="hiz-etiket">5 gün/sn</span>
+          <span class="ayrac" aria-hidden="true"></span>
+          <span id="gecen-sure" title="Geçen simülasyon süresi">0 gün</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="denetimler" aria-label="Görünüm denetimleri">
+      <button class="dugme cam" id="dugme-tur" type="button" title="Tur (T)" aria-label="Turu başlat" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2z" fill="currentColor"/></svg>
+        <span class="dugme-yazi">Tur</span>
+      </button>
+      <button class="dugme cam" id="dugme-yorunge" type="button" title="Yörüngeler (O)" aria-label="Yörüngeleri aç/kapat" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="9.5" ry="4.6" fill="none" stroke="currentColor" stroke-width="1.6" transform="rotate(-22 12 12)"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/></svg>
+      </button>
+      <button class="dugme cam" id="dugme-etiket" type="button" title="Etiketler (L)" aria-label="Etiketleri aç/kapat" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h8.2a1.5 1.5 0 0 1 1.1.45l6.2 6.2a1.5 1.5 0 0 1 0 2.1l-5.3 5.3a1.5 1.5 0 0 1-2.1 0l-6.2-6.2A1.5 1.5 0 0 1 4 12.3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" transform="translate(-0.5 -0.5)"/><circle cx="8" cy="9.5" r="1.4" fill="currentColor"/></svg>
+      </button>
+      <button class="dugme cam" id="dugme-genel" type="button" title="Genel görünüm (Esc)" aria-label="Genel görünüm">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>
+      </button>
+      <button class="dugme cam" id="dugme-tamekran" type="button" title="Tam ekran" aria-label="Tam ekran">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="dugme cam" id="dugme-yardim" type="button" title="Klavye kısayolları" aria-label="Klavye kısayolları">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 9.3a2.9 2.9 0 1 1 4.4 2.5c-.9.6-1.6 1.2-1.6 2.3v.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.1" fill="currentColor"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Kısa süreli ipucu / tur göstergesi -->
+  <div id="ipucu" class="cam" role="status" aria-live="polite"></div>
+
+  <!-- Bilgi paneli -->
+  <aside id="panel" class="cam" aria-label="Gövde bilgileri" aria-hidden="true">
+    <div class="panel-ust">
+      <span class="panel-tur" id="panel-tur"></span>
+      <div class="panel-dugmeler">
+        <button class="dugme dugme-kucuk" id="panel-onceki" type="button" aria-label="Önceki gövde" title="Önceki (←)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="dugme dugme-kucuk" id="panel-sonraki" type="button" aria-label="Sonraki gövde" title="Sonraki (→)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="dugme dugme-kucuk" id="panel-kapat" type="button" aria-label="Paneli kapat" title="Kapat">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="panel-govde" id="panel-govde">
+      <h2 id="panel-ad"></h2>
+      <p class="panel-aciklama" id="panel-aciklama"></p>
+      <dl class="veriler" id="panel-veriler"></dl>
+      <div class="panel-uydular" id="panel-uydular"></div>
+      <h3>Biliyor muydun?</h3>
+      <ul class="bilgiler" id="panel-bilgiler"></ul>
+    </div>
+  </aside>
+
+  <!-- Gezegen menüsü -->
+  <nav id="menu" class="cam" aria-label="Gövdeler"></nav>
+
+  <footer class="kaynak">Dokular: Solar System Scope (CC BY 4.0) · Three.js</footer>
+
+  <!-- Kısayol yardım penceresi -->
+  <div id="yardim" class="kip" hidden>
+    <div class="kip-kutu cam" role="dialog" aria-modal="true" aria-labelledby="yardim-baslik">
+      <div class="kip-ust">
+        <h2 id="yardim-baslik">Kısayollar</h2>
+        <button class="dugme dugme-kucuk" id="yardim-kapat" type="button" aria-label="Kapat">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <dl class="kisayollar">
+        <div><dt><kbd>0</kbd></dt><dd>Güneş</dd></div>
+        <div><dt><kbd>1</kbd>–<kbd>8</kbd></dt><dd>Gezegenler (Merkür → Neptün)</dd></div>
+        <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Önceki / sonraki gövde</dd></div>
+        <div><dt><kbd>Boşluk</kbd></dt><dd>Duraklat / oynat</dd></div>
+        <div><dt><kbd>Esc</kbd></dt><dd>Genel görünüm</dd></div>
+        <div><dt><kbd>O</kbd></dt><dd>Yörüngeleri aç/kapat</dd></div>
+        <div><dt><kbd>L</kbd></dt><dd>Etiketleri aç/kapat</dd></div>
+        <div><dt><kbd>T</kbd></dt><dd>Turu başlat/durdur</dd></div>
+      </dl>
+      <p class="kip-not">Sürükle: döndür · Tekerlek ya da iki parmak: yakınlaş · Sağ tık: kaydır · Tıkla: gezegene git</p>
+    </div>
+  </div>
+
+  <!-- Hata ekranı (WebGL yoksa ya da dosya doğrudan açıldıysa) -->
+  <div id="hata" hidden>
+    <div class="hata-kutu">
+      <h2 id="hata-baslik">Bir sorun oluştu</h2>
+      <p id="hata-metin"></p>
+    </div>
+  </div>
+
+  <script>
+    // ES modülleri file:// üzerinden yüklenemez; kullanıcıya ne yapacağını söyle.
+    if (location.protocol === 'file:') {
+      document.getElementById('yukleme').style.display = 'none';
+      document.getElementById('hata-baslik').textContent = 'Yerel sunucu gerekli';
+      document.getElementById('hata-metin').textContent =
+        'Bu sayfa doğrudan dosyadan açılamaz. Klasördeki "Güneş Sistemi.command" dosyasına çift tıkla ya da klasörde "python3 -m http.server 8773" komutunu çalıştırıp http://localhost:8773 adresini aç.';
+      document.getElementById('hata').hidden = false;
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

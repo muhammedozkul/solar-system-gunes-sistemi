@@ -11,6 +11,7 @@ import {
   olcekUzaklik,
   olcekUyduPeriyot,
 } from './data.js';
+import { govdeMetni } from './i18n.js';
 import {
   gunesMalzemesi,
   koronaMalzemesi,
@@ -60,7 +61,12 @@ function yorungeKonumu(y, nu, hedef) {
   return hedef.set(x * c + z * s, yy, -x * s + z * c);
 }
 
-export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, etiketTiklandi }) {
+/**
+ * `gokyuzuGenislik` verilirse 8K Samanyolu dokusu yüklendikten sonra bu genişliğe
+ * (yükseklik yarısı) küçültülüp CanvasTexture olarak kullanılır; düşük doku sınırlı
+ * ya da küçük/dokunmatik ekranlı cihazlarda bellek ve yükleme takılmasını azaltır.
+ */
+export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, gokyuzuGenislik = 0 }) {
   const yukleyici = new THREE.TextureLoader(yonetici);
   const dokuOnbellek = new Map();
 
@@ -89,17 +95,16 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, etik
 
   // ---- Yardımcılar --------------------------------------------------------
 
+  // Etikete tıklama main.js'te ele alınır: kamera denetimi sahne kabını dinlediği
+  // için sürükleme/tekerlek etiketin üstünde de çalışır; kısa dokunuş data-id'den
+  // gövdeyi bulur.
   function etiketOlustur(veri, sinif = '') {
     const el = document.createElement('div');
     el.className = `etiket ${sinif}`.trim();
     el.dataset.id = veri.id;
     const ad = document.createElement('span');
-    ad.textContent = veri.ad;
+    ad.textContent = govdeMetni(veri.id).ad;
     el.appendChild(ad);
-    el.addEventListener('click', (olay) => {
-      olay.stopPropagation();
-      etiketTiklandi(veri.id);
-    });
     const nesne = new CSS2DObject(el);
     nesne.center.set(0.5, 1);
     return nesne;
@@ -227,7 +232,7 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, etik
 
   // ---- Uydular ------------------------------------------------------------
   function uyduKur(uv, ebeveyn, duzlem) {
-    const R = olcekUyduYaricap(uv.yaricap);
+    const R = olcekUyduYaricap(uv.yaricap, ebeveyn.veri.yaricap);
     const dugum = new THREE.Group();
     duzlem.add(dugum);
 
@@ -457,7 +462,8 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, etik
   // Mars ile Jüpiter arası; üç katman Kepler'e uygun farklı hızlarda döner.
   (function asteroitKusagi() {
     const rnd = rastgeleUret(20240611);
-    const geo = new THREE.IcosahedronGeometry(1, 1);
+    // Ayrıntı 0 (20 yüz): kayalar ekranda küçük; daha fazlası yalnızca köşe yükü getirir
+    const geo = new THREE.IcosahedronGeometry(1, 0);
     const k = geo.attributes.position;
     for (let i = 0; i < k.count; i++) {
       tmp.fromBufferAttribute(k, i);
@@ -485,14 +491,13 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, etik
       katman.ic = olcekUzaklik(katman.icAB);
       katman.dis = olcekUzaklik(katman.disAB);
       const ag = new THREE.InstancedMesh(geo, malzeme, katman.adet);
-      ag.frustumCulled = false;
       for (let i = 0; i < katman.adet; i++) {
         const r = katman.ic + (katman.dis - katman.ic) * (0.5 + (rnd() + rnd() + rnd() - 1.5) / 3 * 1.6);
         const a = rnd() * TAU;
         const y = (rnd() + rnd() + rnd() - 1.5) * 2.2;
         kukla.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
         kukla.rotation.set(rnd() * TAU, rnd() * TAU, rnd() * TAU);
-        const boyut = 0.025 + Math.pow(rnd(), 3.2) * 0.14;
+        const boyut = 0.011 + Math.pow(rnd(), 3.2) * 0.06;
         kukla.scale.set(boyut * (0.7 + rnd() * 0.6), boyut * (0.6 + rnd() * 0.5), boyut * (0.7 + rnd() * 0.6));
         kukla.updateMatrix();
         ag.setMatrixAt(i, kukla.matrix);
@@ -551,16 +556,36 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, etik
   const gokyuzu = new THREE.Group();
   sahne.add(gokyuzu);
 
-  const samanyolu = new THREE.Mesh(
-    new THREE.SphereGeometry(9000, 48, 32),
-    new THREE.MeshBasicMaterial({
-      map: doku('8k_stars_milky_way.jpg'),
-      side: THREE.BackSide,
-      color: new THREE.Color(0.85, 0.85, 0.9),
-      depthWrite: false,
-      fog: false,
-    })
-  );
+  const samanyoluMat = new THREE.MeshBasicMaterial({
+    side: THREE.BackSide,
+    color: new THREE.Color(0.85, 0.85, 0.9),
+    depthWrite: false,
+    fog: false,
+  });
+  const samanyolu = new THREE.Mesh(new THREE.SphereGeometry(9000, 48, 32), samanyoluMat);
+  if (gokyuzuGenislik > 0) {
+    // Dokuyu küçült: tam boyutlu görsel GPU'ya hiç yüklenmez. Yükleme bitene
+    // (ya da başarısız olana) kadar küre gizli kalır; dokusuz gri bir küre görünmesin.
+    samanyolu.visible = false;
+    yukleyici.load('textures/8k_stars_milky_way.jpg', (buyuk) => {
+      const tuval = document.createElement('canvas');
+      tuval.width = gokyuzuGenislik;
+      tuval.height = Math.round(gokyuzuGenislik / 2);
+      const c = tuval.getContext('2d');
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = 'high';
+      c.drawImage(buyuk.image, 0, 0, tuval.width, tuval.height);
+      buyuk.dispose();
+      const kucuk = new THREE.CanvasTexture(tuval);
+      kucuk.colorSpace = THREE.SRGBColorSpace;
+      kucuk.anisotropy = anizotropi;
+      samanyoluMat.map = kucuk;
+      samanyoluMat.needsUpdate = true;
+      samanyolu.visible = true;
+    });
+  } else {
+    samanyoluMat.map = doku('8k_stars_milky_way.jpg');
+  }
   // Galaksi düzlemi tutulum düzlemine yaklaşık 60° eğiktir
   samanyolu.rotation.set(60.2 * DERECE, 0, 0.5);
   samanyolu.renderOrder = -10;
@@ -635,6 +660,13 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, etik
 
     pikselOraniAyarla(oran) {
       yildizMat.uniforms.uPikselOrani.value = oran;
+    },
+
+    /** Dil değişince 3B etiketlerdeki adları yeniden yazar. */
+    etiketAdlariniYenile() {
+      for (const g of govdeler.values()) {
+        g.etiket.element.firstChild.textContent = govdeMetni(g.id).ad;
+      }
     },
 
     yorungeleriGoster(acik) {

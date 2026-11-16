@@ -214,7 +214,7 @@ export function koronaMalzemesi(icOran) {
 
 /**
  * Dünya yüzeyi: gündüz/gece dokuları arasında yumuşak terminatör, şehir ışıkları,
- * okyanuslarda specular parlama, normal map ve bulut gölgeleri.
+ * okyanuslarda küçük specular parlama, normal map ve bulut gölgeleri.
  */
 export function dunyaMalzemesi({ gunduz, gece, yansima, normal, bulut }) {
   return new THREE.ShaderMaterial({
@@ -268,12 +268,14 @@ export function dunyaMalzemesi({ gunduz, gece, yansima, normal, bulut }) {
         float alaca = smoothstep(-0.1, 0.04, nlGeo) * (1.0 - smoothstep(0.04, 0.32, nlGeo));
         renk *= mix(vec3(1.0), vec3(1.0, 0.68, 0.46), alaca * 0.55);
 
-        // Okyanuslarda Güneş parlaması
+        // Okyanuslarda Güneş parlaması: küçük, yumuşak kenarlı, hafif sıcak bir
+        // ışıltı ve çok zayıf geniş bir hale. Bulutların altında tamamen söner.
         vec3 H = normalize(L + V);
         vec3 Ns = normalize(mix(Ng, N, 0.25));
-        float parlama = pow(max(dot(Ns, H), 0.0), 150.0) * 0.6
-                      + pow(max(dot(Ns, H), 0.0), 22.0) * 0.06;
-        renk += vec3(1.0, 0.93, 0.8) * parlama * deniz * gunduzOrani * (1.0 - bulut * 0.8);
+        float nh = max(dot(Ns, H), 0.0);
+        float parlama = pow(nh, 900.0) * 0.2 + pow(nh, 120.0) * 0.035;
+        float bulutsuz = 1.0 - smoothstep(0.08, 0.55, bulut);
+        renk += vec3(1.0, 0.86, 0.66) * parlama * deniz * gunduzOrani * bulutsuz;
 
         // Gece tarafı: şehir ışıkları (bulutların altında sönükleşir) + çok hafif ortam ışığı
         renk += gece * vec3(1.0, 0.86, 0.62) * (1.0 - gunduzOrani) * 1.5 * (1.0 - bulut * 0.65);

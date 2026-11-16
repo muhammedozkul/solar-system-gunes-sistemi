@@ -346,6 +346,35 @@ input[type="range"]:focus-visible {
   padding: 0 13px 0 10px;
 }
 
+/* Dil düğmesi: TR | EN, etkin dil vurgulu (html[lang] ile; JS gerekmez) */
+#dugme-dil {
+  gap: 6px;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.dil-secenek {
+  color: var(--yazi-3);
+  transition: color 0.2s ease;
+}
+
+#dugme-dil:hover .dil-secenek {
+  color: var(--yazi-2);
+}
+
+html[lang="tr"] .dil-secenek[data-dil="tr"],
+html[lang="en"] .dil-secenek[data-dil="en"] {
+  color: var(--vurgu);
+}
+
+.dil-ayrac {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
 .dugme-kucuk {
   height: 30px;
   min-width: 30px;
@@ -960,6 +989,12 @@ kbd {
 
   #dugme-tur {
     padding: 0;
+  }
+
+  #dugme-dil {
+    gap: 4px;
+    padding: 0 8px;
+    font-size: 10.5px;
   }
 
   .dugme {

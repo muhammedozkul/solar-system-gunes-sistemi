@@ -10,11 +10,13 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
-import { ANA_SIRA, VERI } from './data.js';
+import { ANA_SIRA } from './data.js';
 import { gunesSistemiKur } from './scene.js';
-import { arayuzKur } from './ui.js';
+import { arayuzKur, hataGoster } from './ui.js';
+import { dilBaslat, dilDegisince, govdeMetni, t, tHtml } from './i18n.js';
 
 const AZ_HAREKET = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DOKUNMATIK = window.matchMedia('(pointer: coarse)').matches;
 const UCUS_SURESI = AZ_HAREKET ? 0.45 : 2.2; // sn
 const ACILIS_SURESI = AZ_HAREKET ? 0.8 : 5.2; // sn
 const TUR_BEKLEME = 8; // her gövdede kalınan süre (sn)
@@ -23,6 +25,12 @@ const TUR_BEKLEME = 8; // her gövdede kalınan süre (sn)
 // dönüşmesin diye bu iki saat sınırlı hızla ilerler (gün/sn).
 const DONUS_HIZ_SINIRI = 0.12;
 const UYDU_HIZ_SINIRI = 0.8;
+
+// Piksel oranı 1,5 ile sınırlanır ve 4× MSAA korunur: Retina ekranda 2× çizime göre
+// ~%44 daha az piksel (bloom geçişleri de buna ölçeklenir), yörünge çizgileri ve
+// gezegen kenarları ise MSAA sayesinde MSAA'sız 2×'ten daha pürüzsüz kalır.
+const EN_COK_PIKSEL_ORANI = 1.5;
+const MSAA_ORNEK = 4;
 
 const Y_EKSENI = new THREE.Vector3(0, 1, 0);
 
@@ -35,6 +43,10 @@ function webglVarMi() {
   }
 }
 
+function pikselOraniHesapla() {
+  return Math.min(window.devicePixelRatio || 1, EN_COK_PIKSEL_ORANI);
+}
+
 function yumusak(t) {
   // ease in-out (kübik)
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -44,9 +56,39 @@ function aciSarmala(a) {
   return Math.atan2(Math.sin(a), Math.cos(a));
 }
 
-if (location.protocol !== 'file:') basla();
+if (location.protocol !== 'file:') {
+  dilBaslat();
+  basla();
+}
 
 function basla() {
+  // ---- Renderer -----------------------------------------------------------
+  // WebGL denetimi ve renderer, arayüz olayları bağlanmadan önce yapılır: hata
+  // durumunda hiçbir düğme henüz kurulmamış sahne nesnelerine erişemez.
+  if (!webglVarMi()) {
+    hataGoster('hata.webglYokBaslik', 'hata.webglYokMetin');
+    return;
+  }
+
+  const kap = document.getElementById('sahne');
+  let genislik = window.innerWidth;
+  let yukseklik = window.innerHeight;
+  let pikselOrani = pikselOraniHesapla();
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+  } catch {
+    hataGoster('hata.webglBaslatBaslik', 'hata.webglBaslatMetin');
+    return;
+  }
+  renderer.setPixelRatio(pikselOrani);
+  renderer.setSize(genislik, yukseklik);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  kap.appendChild(renderer.domElement);
+
   // ---- Durum --------------------------------------------------------------
   const durum = {
     duraklat: false,
@@ -61,56 +103,33 @@ function basla() {
     acilisIpucu: false,
   };
 
+  // Yükleme bitip açılış uçuşu başlayana kadar klavye kısayolları ve arayüz olayları yok sayılır
+  let hazir = false;
+  const hazirsa =
+    (islev) =>
+    (...argumanlar) => {
+      if (hazir) islev(...argumanlar);
+    };
+
   const olaylar = {
-    sec: (id) => odaklan(id),
-    onceki: () => komsuyaGit(-1),
-    sonraki: () => komsuyaGit(1),
-    panelKapat: () => {
+    sec: hazirsa((id) => odaklan(id)),
+    onceki: hazirsa(() => komsuyaGit(-1)),
+    sonraki: hazirsa(() => komsuyaGit(1)),
+    panelKapat: hazirsa(() => {
       durum.panelAcik = false;
       ui.panelGizle();
-    },
+    }),
     hiz: (deger) => {
       durum.hiz = deger;
     },
-    duraklat: duraklatDegistir,
-    tur: turDegistir,
-    yorungeler: yorungeleriDegistir,
-    etiketler: etiketleriDegistir,
-    genelGorunum: () => genelGorunum(),
+    duraklat: hazirsa(() => duraklatDegistir()),
+    tur: hazirsa(() => turDegistir()),
+    yorungeler: hazirsa(() => yorungeleriDegistir()),
+    etiketler: hazirsa(() => etiketleriDegistir()),
+    genelGorunum: hazirsa(() => genelGorunum()),
   };
   const ui = arayuzKur(olaylar);
   durum.hiz = ui.baslangicHizi();
-
-  if (!webglVarMi()) {
-    ui.hataGoster(
-      'WebGL kullanılamıyor',
-      'Bu deneyim için WebGL destekleyen güncel bir tarayıcı ve ekran kartı sürücüsü gerekir. Tarayıcını güncellemeyi ya da donanım hızlandırmayı açmayı dene.'
-    );
-    return;
-  }
-
-  // ---- Renderer -----------------------------------------------------------
-  const kap = document.getElementById('sahne');
-  let genislik = window.innerWidth;
-  let yukseklik = window.innerHeight;
-  const pikselOrani = Math.min(window.devicePixelRatio || 1, 2);
-
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-  } catch {
-    ui.hataGoster(
-      'WebGL başlatılamadı',
-      'Grafik bağlamı oluşturulamadı. Tarayıcında donanım hızlandırmanın açık olduğundan emin ol ve sayfayı yenile.'
-    );
-    return;
-  }
-  renderer.setPixelRatio(pikselOrani);
-  renderer.setSize(genislik, yukseklik);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
-  kap.appendChild(renderer.domElement);
 
   const etiketRenderer = new CSS2DRenderer();
   etiketRenderer.setSize(genislik, yukseklik);
@@ -129,7 +148,7 @@ function basla() {
   // bloom üretir; gezegenler yanıp patlamaz. Çoklu örnekleme kenarları yumuşatır.
   const hedef = new THREE.WebGLRenderTarget(genislik * pikselOrani, yukseklik * pikselOrani, {
     type: THREE.HalfFloatType,
-    samples: pikselOrani > 1.5 ? 2 : 4,
+    samples: MSAA_ORNEK,
   });
   const composer = new EffectComposer(renderer, hedef);
   composer.setPixelRatio(pikselOrani);
@@ -148,7 +167,9 @@ function basla() {
   composer.addPass(new OutputPass());
 
   // ---- Denetimler ---------------------------------------------------------
-  const kontroller = new OrbitControls(kamera, renderer.domElement);
+  // Denetim tuvale değil sahne kabına bağlanır: etiketler tuvalin üstünde durduğu
+  // için sürükleme ve tekerlek etiketin üzerindeyken de çalışsın.
+  const kontroller = new OrbitControls(kamera, kap);
   kontroller.enableDamping = true;
   kontroller.dampingFactor = 0.07;
   kontroller.rotateSpeed = 0.55;
@@ -164,30 +185,36 @@ function basla() {
   let yuklemeHatasi = false;
   yonetici.onProgress = (_url, yuklenen, toplam) => {
     const oran = yuklenen / toplam;
-    ui.yuklemeIlerleme(oran, `Dokular yükleniyor… %${Math.round(oran * 100)}`);
+    ui.yuklemeIlerleme(oran, 'yukleme.ilerleme', { yuzde: Math.round(oran * 100) });
   };
   yonetici.onError = (url) => {
     yuklemeHatasi = true;
-    ui.yuklemeIlerleme(0, `Yüklenemedi: ${url}`);
+    ui.yuklemeIlerleme(0, 'yukleme.hata', { url });
   };
   yonetici.onLoad = () => {
-    if (!yuklemeHatasi) ui.yuklemeIlerleme(1, 'Hazır');
+    if (!yuklemeHatasi) ui.yuklemeIlerleme(1, 'yukleme.hazir');
     // İlk kare: shader derleme ve doku yükleme takılması açılış ekranının arkasında kalsın
     kare();
     setTimeout(() => {
       ui.yuklemeBitti();
       saat.getDelta();
       renderer.setAnimationLoop(kare);
+      hazir = true;
       acilis();
     }, 250);
   };
+
+  // Doku sınırı 8K'nın altındaysa ya da küçük/dokunmatik ekranda gökyüzü dokusu küçültülür
+  const enBuyukDoku = renderer.capabilities.maxTextureSize;
+  const kucukEkran = DOKUNMATIK || Math.min(window.screen.width, window.screen.height) <= 820;
+  const gokyuzuGenislik = enBuyukDoku < 8192 || kucukEkran ? Math.min(4096, enBuyukDoku) : 0;
 
   const sistem = gunesSistemiKur({
     sahne,
     yonetici,
     anizotropi: Math.min(8, renderer.capabilities.getMaxAnisotropy()),
     pikselOrani,
-    etiketTiklandi: (id) => odaklan(id),
+    gokyuzuGenislik,
   });
 
   // Simülasyon saati. Başlangıç: bugünün J2000'den bu yana gün sayısı; böylece
@@ -209,11 +236,32 @@ function basla() {
   // ---- Kamera uçuşu -------------------------------------------------------
 
   /**
+   * OrbitControls'un sönümleme artığını (dönme/kaydırma/yakınlaşma ivmesi) sıfırlar.
+   * Bu iç değerler dışarıya açık değildir: sönümleme kapalıyken bir update() hepsini
+   * uygulayıp sıfırlar, ardından kameranın konumu ve hedefi geri yüklenir.
+   */
+  function sonumlemeyiSifirla() {
+    v1.copy(kamera.position);
+    v2.copy(kontroller.target);
+    const otoDonus = kontroller.autoRotate;
+    kontroller.enableDamping = false;
+    kontroller.autoRotate = false;
+    kontroller.update();
+    kontroller.enableDamping = true;
+    kontroller.autoRotate = otoDonus;
+    kamera.position.copy(v1);
+    kontroller.target.copy(v2);
+    kamera.lookAt(kontroller.target);
+  }
+
+  /**
    * Kamerayı yumuşak, yay çizen bir yolla hedefe uçurur.
    * `hedefAl` her karede güncel hedef konumunu verir (gövde yörüngede ilerlerken
    * varış noktası da onunla birlikte kayar); `ofset` kameranın hedefe göre son konumudur.
    */
   function ucusBaslat({ hedefAl, ofset, sure = UCUS_SURESI, enYakin, yay = true, bitince }) {
+    // Önceki sürüklemenin ivmesi varışta kameranın kaymasına yol açmasın
+    sonumlemeyiSifirla();
     kontroller.enabled = false;
     durum.ucus = {
       t: 0,
@@ -250,7 +298,7 @@ function basla() {
       durum.ucus = null;
       kontroller.minDistance = u.enYakin;
       kontroller.enabled = true;
-      kontroller.update();
+      kontroller.update(dt);
       if (u.bitince) u.bitince();
     }
   }
@@ -357,7 +405,7 @@ function basla() {
       yay: false,
       bitince: () => {
         durum.acilisIpucu = true;
-        ui.ipucu('<b>Sürükle:</b> döndür · <b>Tekerlek:</b> yakınlaş · <b>Tıkla:</b> gezegene git', 9000);
+        ui.ipucu(() => t(DOKUNMATIK ? 'ipucu.acilisDokunmatik' : 'ipucu.acilis'), 9000);
       },
     });
   }
@@ -366,12 +414,11 @@ function basla() {
 
   function turAdimi() {
     const id = ANA_SIRA[durum.tur.sira];
+    const sira = durum.tur.sira + 1;
     durum.tur.bekleme = 0;
     odaklan(id);
-    ui.ipucu(
-      `<b>Tur</b> · ${VERI.get(id).ad} · ${durum.tur.sira + 1}/${ANA_SIRA.length} — durdurmak için tıkla ya da bir tuşa bas`,
-      0
-    );
+    // Gövde adı kalıba kaçışlanarak konur; dil değişince ipucu yeniden üretilir
+    ui.ipucu(() => tHtml('ipucu.tur', { ad: govdeMetni(id).ad, sira, toplam: ANA_SIRA.length }), 0);
   }
 
   function turBaslat() {
@@ -427,13 +474,18 @@ function basla() {
     ui.dugmeDurumu('etiket', durum.etiketler);
   }
 
+  // ---- Dil ----------------------------------------------------------------
+  // Arayüz kendi metinlerini yeniler; burada yalnızca 3B etiketler kalır.
+  // Kamera, odak, zaman ve tur durumuna dokunulmaz.
+  dilDegisince(() => sistem.etiketAdlariniYenile());
+
   // ---- Tıklama ve üzerine gelme -------------------------------------------
 
   const isinlayici = new THREE.Raycaster();
   const fare = new THREE.Vector2();
   const tuval = renderer.domElement;
   const isaretciler = new Map(); // etkin işaretçiler (çoklu dokunuşu ayırt etmek için)
-  let basma = null; // { x, y, zaman, gecerli }
+  let basma = null; // { x, y, zaman, gecerli, etiketId }
   let uzerindeKontrol = false;
   let sonFare = null;
 
@@ -447,16 +499,19 @@ function basla() {
     return isabetler.length ? isabetler[0].object.userData.id : null;
   }
 
-  tuval.addEventListener('pointerdown', (olay) => {
+  // Sahne kabı hem tuvali hem etiket katmanını kapsar. Basılan yer bir etiketse
+  // kimliği hatırlanır; kısa ve kıpırtısız bırakılırsa o gövdeye gidilir.
+  kap.addEventListener('pointerdown', (olay) => {
     isaretciler.set(olay.pointerId, true);
+    const etiket = olay.target instanceof Element ? olay.target.closest('.etiket') : null;
     basma = {
       x: olay.clientX,
       y: olay.clientY,
       zaman: performance.now(),
       // Yalnızca tek parmak / sol tuş tıklama sayılır
       gecerli: isaretciler.size === 1 && olay.button === 0,
+      etiketId: etiket ? etiket.dataset.id : null,
     };
-    if (isaretciler.size > 1 && basma) basma.gecerli = false;
   });
 
   tuval.addEventListener('pointermove', (olay) => {
@@ -474,61 +529,85 @@ function basla() {
   function isaretciBirak(olay) {
     isaretciler.delete(olay.pointerId);
   }
-  window.addEventListener('pointercancel', isaretciBirak);
+  window.addEventListener('pointercancel', (olay) => {
+    isaretciBirak(olay);
+    basma = null;
+  });
   window.addEventListener('pointerup', (olay) => {
     const b = basma;
     isaretciBirak(olay);
-    if (!b || !b.gecerli || olay.target !== tuval) return;
+    if (!b || !b.gecerli) return;
     basma = null;
+    // Denetim işaretçiyi yakaladığında hedef kabın kendisidir; yakalama yoksa
+    // (ör. uçuş sırasında) bırakılan yer yine sahnenin içinde olmalı
+    if (!hazir || !(olay.target instanceof Node) || !kap.contains(olay.target)) return;
     // Sürükleme ile tıklamayı ayır: birkaç pikselden fazla oynadıysa tıklama değildir
     const oynama = Math.hypot(olay.clientX - b.x, olay.clientY - b.y);
     if (oynama > 6 || performance.now() - b.zaman > 700) return;
-    const id = govdeBul(olay.clientX, olay.clientY);
+    const id = b.etiketId || govdeBul(olay.clientX, olay.clientY);
     if (id) odaklan(id);
   });
 
   // ---- Kullanıcı etkileşimi turu durdurur ---------------------------------
 
+  /** Tur düğmesi turu kendisi yönetir; dil düğmesi ise sahne durumuna dokunmaz. */
+  function turuEtkilemez(hedef) {
+    return hedef instanceof Element && !!hedef.closest('#dugme-tur, #dugme-dil');
+  }
+
   function etkilesim(olay) {
+    if (turuEtkilemez(olay.target)) return;
     if (durum.acilisIpucu) {
       durum.acilisIpucu = false;
       ui.ipucuGizle();
     }
-    if (durum.tur && !(olay.target instanceof Element && olay.target.closest('#dugme-tur'))) {
-      turDurdur();
-    }
+    if (durum.tur) turDurdur();
   }
   window.addEventListener('pointerdown', etkilesim, true);
   window.addEventListener('wheel', etkilesim, { capture: true, passive: true });
 
   // ---- Klavye -------------------------------------------------------------
 
+  /** Klavye kısayoluyla gövde değişince menüde eski öğenin odak çerçevesi kalmasın. */
+  function menuOdaginiBirak() {
+    const aktif = document.activeElement;
+    if (aktif instanceof HTMLElement && aktif.closest('#menu')) aktif.blur();
+  }
+
   window.addEventListener('keydown', (olay) => {
     if (olay.metaKey || olay.ctrlKey || olay.altKey) return;
     const tus = olay.key;
+    const hedef = olay.target instanceof HTMLElement ? olay.target : null;
+    const girdide = !!hedef && hedef.tagName === 'INPUT';
 
     if (ui.yardimAcik()) {
-      if (tus === 'Escape') ui.yardimGoster(false);
+      // Pencere içinde düğmeler normal çalışır (Boşluk/Enter kapat düğmesini tetikler)
+      if (tus === 'Escape' && !olay.repeat) ui.yardimGoster(false);
       return;
     }
 
+    // Boşluk her yerde yalnızca duraklatır/oynatır: odaktaki düğmenin kendi tıklaması
+    // tetiklenmesin (bkz. keyup) ve sayfa kaymasın
+    if (tus === ' ') olay.preventDefault();
+    if (!hazir || olay.repeat) return;
+
+    // Tur/dil düğmesinde Enter düğmenin kendi tıklamasını tetikler: tur düğmesi
+    // turu kendisi durdurur, dil düğmesi turu etkilemez. Burada ayrıca durdurma.
     const turTusu = tus === 't' || tus === 'T';
-    if (durum.tur && !turTusu) turDurdur();
-    if (durum.acilisIpucu) {
+    const dugmeKendisiYapar = tus === 'Enter' && turuEtkilemez(hedef);
+    if (durum.tur && !turTusu && !dugmeKendisiYapar) turDurdur();
+    if (durum.acilisIpucu && !dugmeKendisiYapar) {
       durum.acilisIpucu = false;
       ui.ipucuGizle();
     }
 
-    const hedef = olay.target;
-    const dugmede = hedef instanceof HTMLElement && (hedef.tagName === 'BUTTON' || hedef.tagName === 'INPUT');
-
     if (tus >= '0' && tus <= '8' && tus.length === 1) {
+      menuOdaginiBirak();
       odaklan(ANA_SIRA[Number(tus)]);
     } else if (tus === ' ') {
-      // Boşluk her yerde duraklatır; odaktaki düğmeyi ayrıca tetiklemesin (Enter çalışmaya devam eder)
-      olay.preventDefault();
       duraklatDegistir();
     } else if (tus === 'Escape') {
+      menuOdaginiBirak();
       genelGorunum();
     } else if (tus === 'o' || tus === 'O') {
       yorungeleriDegistir();
@@ -538,11 +617,20 @@ function basla() {
       turDegistir();
     } else if (tus === '?') {
       ui.yardimGoster(true);
-    } else if (tus === 'ArrowRight' && !(dugmede && hedef.tagName === 'INPUT')) {
+    } else if (tus === 'ArrowRight' && !girdide) {
+      menuOdaginiBirak();
       komsuyaGit(1);
-    } else if (tus === 'ArrowLeft' && !(dugmede && hedef.tagName === 'INPUT')) {
+    } else if (tus === 'ArrowLeft' && !girdide) {
+      menuOdaginiBirak();
       komsuyaGit(-1);
     }
+  });
+
+  // Düğmeler Boşluk'la tıklamayı tuş bırakılınca yapar; burada da engellenir ki
+  // Boşluk odaktaki düğmeyi ikinci kez tetiklemesin
+  window.addEventListener('keyup', (olay) => {
+    if (olay.key !== ' ' || ui.yardimAcik()) return;
+    if (olay.target instanceof HTMLElement && olay.target.tagName === 'BUTTON') olay.preventDefault();
   });
 
   // ---- Pencere olayları ---------------------------------------------------
@@ -550,11 +638,16 @@ function basla() {
   window.addEventListener('resize', () => {
     genislik = window.innerWidth;
     yukseklik = window.innerHeight;
+    // Pencere başka bir ekrana taşındıysa ya da sayfa yakınlaştırıldıysa piksel oranı değişir
+    pikselOrani = pikselOraniHesapla();
     kamera.aspect = genislik / yukseklik;
     kamera.updateProjectionMatrix();
+    renderer.setPixelRatio(pikselOrani);
     renderer.setSize(genislik, yukseklik);
+    composer.setPixelRatio(pikselOrani);
     composer.setSize(genislik, yukseklik);
     etiketRenderer.setSize(genislik, yukseklik);
+    sistem.pikselOraniAyarla(pikselOrani);
   });
 
   // Sekme gizlenince animasyonu durdur, dönünce zaman sıçramasın
@@ -605,7 +698,8 @@ function basla() {
         odak.dunyaKonumu(kontroller.target);
         kamera.position.copy(kontroller.target).add(v1);
       }
-      kontroller.update();
+      // Gerçek kare süresiyle: otomatik dönüş yüksek yenileme hızında hızlanmasın
+      kontroller.update(dt);
     }
 
     turGuncelle(dt);

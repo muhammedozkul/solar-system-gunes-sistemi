@@ -30,6 +30,7 @@ ES modülleri `file://` üzerinden yüklenemediği için `index.html` dosyasın�
 | Genel görünüm | `Esc` |
 | Yörüngeler / etiketler | `O` / `L` |
 | Otomatik tur | `T` |
+| Dil (Türkçe / İngilizce) | Sağ üstteki TR · EN düğmesi; seçim hatırlanır, ilk açılışta tarayıcı diline göre seçilir |
 
 Bir gövdeye gidildiğinde kamera onu yörüngesinde takip eder; bu sırada çevresinde dönüp yakınlaşabilirsin. Gezegenlerin bilgi panelindeki çiplerle uydulara (Ay, Phobos, Deimos, Io, Europa, Ganymede, Callisto, Titan) geçebilirsin.
 
@@ -40,7 +41,7 @@ Bir gövdeye gidildiğinde kamera onu yörüngesinde takip eder; bu sırada çev
 - Satürn: dokulu halka, halkanın gezegene ve gezegenin halkaya düşen gölgesi
 - Gerçek eksen eğiklikleri, dış merkezli ve eğik yörüngeler, gerçek periyot oranları
 - Asteroit kuşağı (3.000 kaya, InstancedMesh), Kuiper kuşağı, Samanyolu ve titreşen yıldızlar
-- Zaman denetimi (1 saat/sn – 2 yıl/sn), otomatik tur, Türkçe bilgi panelleri
+- Zaman denetimi (1 saat/sn – 2 yıl/sn), otomatik tur, Türkçe ve İngilizce arayüz ile bilgi panelleri
 
 ## Ölçek hakkında
 
@@ -60,7 +61,10 @@ js/main.js            Renderer, postprocessing, kamera uçuşu/takibi, etkileşi
 js/scene.js           Güneş, gezegenler, uydular, halkalar, kuşaklar, gökyüzü
 js/shaders.js         Özel GLSL shader'lar
 js/ui.js              Menü, bilgi paneli, zaman denetimi, yardım
-js/data.js            Gezegen verileri, Türkçe metinler, ölçek formülleri
+js/i18n.js            Dil seçimi, t() çeviri işlevi, sayı biçimleme
+js/metin-tr.js        Türkçe arayüz ve gövde metinleri
+js/metin-en.js        İngilizce arayüz ve gövde metinleri
+js/data.js            Gezegen verileri (sayısal), ölçek formülleri
 textures/             Gezegen dokuları
 vendor/three/         Three.js r160
 ```

@@ -1029,7 +1029,7 @@ kbd {
     top: auto;
     left: 8px;
     right: 8px;
-    bottom: calc(104px + var(--guvenli-alt));
+    bottom: calc(116px + var(--guvenli-alt));
     width: auto;
     max-height: 42vh;
     max-height: 42dvh;
@@ -1041,7 +1041,7 @@ kbd {
   }
 
   #menu {
-    bottom: calc(20px + var(--guvenli-alt));
+    bottom: calc(32px + var(--guvenli-alt));
     border-radius: 18px;
   }
 
@@ -1056,6 +1056,10 @@ kbd {
     bottom: calc(3px + var(--guvenli-alt));
     text-align: center;
     font-size: 9px;
+    /* İmza + kaynak dar ekrana tek satırda sığmaz: iki satıra bölünsün */
+    white-space: normal;
+    line-height: 1.35;
+    padding: 0 12px;
   }
 }
 

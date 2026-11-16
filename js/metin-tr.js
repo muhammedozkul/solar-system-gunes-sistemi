@@ -14,7 +14,7 @@ export const ARAYUZ = {
   'marka.ad': 'Güneş Sistemi',
   'marka.alt': 'Etkileşimli 3B keşif',
   'sahne.aria': 'Güneş Sistemi 3B sahnesi',
-  'kaynak': 'Dokular: Solar System Scope (CC BY 4.0) · Three.js',
+  'kaynak': 'Geliştiren: Muhammed Yaşar ÖZKUL · Dokular: Solar System Scope (CC BY 4.0) · Three.js',
 
   // Yükleme
   'yukleme.dokular': 'Dokular yükleniyor…',

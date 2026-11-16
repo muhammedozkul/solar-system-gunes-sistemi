@@ -12,7 +12,7 @@ export const ARAYUZ = {
   'marka.ad': 'Solar System',
   'marka.alt': 'Interactive 3D explorer',
   'sahne.aria': '3D view of the Solar System',
-  'kaynak': 'Textures: Solar System Scope (CC BY 4.0) · Three.js',
+  'kaynak': 'Built by Muhammed Yaşar ÖZKUL · Textures: Solar System Scope (CC BY 4.0) · Three.js',
 
   // Yükleme
   'yukleme.dokular': 'Loading textures…',

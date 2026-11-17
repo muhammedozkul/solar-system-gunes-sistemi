@@ -26,6 +26,14 @@ export function kaydiricidanHiza(deger) {
   return HIZ_EN_AZ * Math.pow(HIZ_EN_COK / HIZ_EN_AZ, deger / KAYDIRICI_EN_COK);
 }
 
+function hizdanKaydiriciya(gunSn) {
+  const oran = Math.log(gunSn / HIZ_EN_AZ) / Math.log(HIZ_EN_COK / HIZ_EN_AZ);
+  return Math.round(Math.min(1, Math.max(0, oran)) * KAYDIRICI_EN_COK);
+}
+
+/** Bilgi paneli mobilde alttan çıkan çekmecedir (bkz. style.css, max-width: 720px). */
+const MOBIL = window.matchMedia('(max-width: 720px)');
+
 function hizYazisi(gunSn) {
   if (gunSn < 0.96) return t('hiz.saat', { n: sayiBicimle(Math.max(1, Math.round(gunSn * 24))) });
   if (gunSn < 10) return t('hiz.gun', { n: sayiBicimle(gunSn, 1) });
@@ -70,6 +78,9 @@ export function arayuzKur(olaylar) {
     panelVeriler: $('panel-veriler'),
     panelUydular: $('panel-uydular'),
     panelBilgiler: $('panel-bilgiler'),
+    panelEylem: $('panel-eylem'),
+    panelTutamac: $('panel-tutamac'),
+    ust: document.querySelector('.ust'),
     ipucu: $('ipucu'),
     oynat: $('dugme-oynat'),
     zaman: document.querySelector('.zaman'),
@@ -117,10 +128,15 @@ export function arayuzKur(olaylar) {
     }
   }
   menuYaz();
+  // Açılışta ölç (üst çubuk yüksekliği ekran genişliğine göre değişir)
+  requestAnimationFrame(() => serbestAlanOlc());
 
   // ---- Bilgi paneli -------------------------------------------------------
   let panelZamanlayici = 0;
   let panelId = null; // panelde gösterilen gövde
+  let canliMetin = null; // kuyruklu yıldızın canlı uzaklık satırı
+  let enberiDugme = null; // kuyruk zaten görünürken gizlenir
+  let sonCanli = null;
 
   function paneliDoldur(id, { kaydirmayiKoru = false } = {}) {
     const v = VERI.get(id);
@@ -129,6 +145,24 @@ export function arayuzKur(olaylar) {
     el.panelTur.textContent = m.tur;
     el.panelAd.textContent = m.ad;
     el.panelAciklama.textContent = m.aciklama;
+
+    // Kuyruklu yıldız: canlı uzaklık ve bir sonraki enberiye atlama düğmesi
+    canliMetin = null;
+    enberiDugme = null;
+    sonCanli = null;
+    if (v.tip === 'kuyruklu') {
+      const dugme = document.createElement('button');
+      dugme.type = 'button';
+      dugme.className = 'panel-eylem-dugme';
+      dugme.textContent = t('panel.enberiyeGit');
+      dugme.addEventListener('click', () => olaylar.enberiyeGit(id));
+      canliMetin = document.createElement('span');
+      canliMetin.className = 'panel-canli';
+      enberiDugme = dugme;
+      el.panelEylem.replaceChildren(canliMetin, dugme);
+    } else {
+      el.panelEylem.replaceChildren();
+    }
 
     el.panelVeriler.replaceChildren(
       ...m.veriler.map(([anahtar, deger]) => {
@@ -162,7 +196,7 @@ export function arayuzKur(olaylar) {
       v.uydular.forEach(cipEkle);
     } else if (v.ebeveynId) {
       const baslik = document.createElement('span');
-      baslik.textContent = t('panel.gezegeni');
+      baslik.textContent = t(v.ebeveynId === 'pluton' ? 'panel.cuceGezegeni' : 'panel.gezegeni');
       cipler.push(baslik);
       cipEkle(VERI.get(v.ebeveynId));
     }
@@ -177,6 +211,93 @@ export function arayuzKur(olaylar) {
     );
     if (!kaydirmayiKoru) el.panelGovde.scrollTop = 0;
   }
+
+  // ---- Mobil çekmece --------------------------------------------------------
+  // Panel önce küçük açılır (ad + kısa açıklama), gövde görünür kalır. Yukarı
+  // kaydırınca ya da tutamağa/metne dokununca genişler; aşağı kaydırınca önce
+  // küçülür, sonra kapanır.
+  let serbest = { ust: 0, alt: window.innerHeight }; // gövdenin görünebildiği dikey alan
+
+  function serbestAlanOlc() {
+    const ustAlt = el.ust.getBoundingClientRect().bottom;
+    // Geniş çekmece üst çubuğun hemen altında durur (style.css: --ust-alt)
+    document.documentElement.style.setProperty('--ust-alt', `${Math.round(ustAlt)}px`);
+    let alt = window.innerHeight;
+    if (MOBIL.matches && el.panel.classList.contains('acik')) {
+      // Geniş çekmece okumak içindir: kadraj her zaman küçük çekmeceye göre kurulur
+      const stil = getComputedStyle(el.panel);
+      const kucuk = parseFloat(stil.getPropertyValue('--cekmece-kucuk')) || 200;
+      alt = window.innerHeight - parseFloat(stil.bottom) - kucuk;
+    }
+    serbest = { ust: ustAlt, alt };
+  }
+
+  function cekmeceGenislet(genis) {
+    if (!MOBIL.matches) return;
+    el.panel.classList.toggle('genis', genis);
+    el.panelTutamac.setAttribute('aria-expanded', String(genis));
+    el.panelTutamac.setAttribute('aria-label', t(genis ? 'panel.daralt' : 'panel.genislet'));
+    if (!genis) el.panelGovde.scrollTop = 0;
+  }
+
+  let surukle = null; // { y, zaman }
+  function surukleBasla(olay) {
+    if (!MOBIL.matches || olay.button !== 0) return;
+    if (olay.target instanceof Element && olay.target.closest('.panel-dugmeler')) return;
+    surukle = { y: olay.clientY, zaman: performance.now() };
+  }
+  function surukleBitir(olay) {
+    if (!surukle) return;
+    const dy = olay.clientY - surukle.y;
+    const kisa = performance.now() - surukle.zaman < 600;
+    surukle = null;
+    const genis = el.panel.classList.contains('genis');
+    if (dy < -28) cekmeceGenislet(true);
+    else if (dy > 28) {
+      if (genis) cekmeceGenislet(false);
+      else olaylar.panelKapat();
+    } else if (kisa && Math.abs(dy) < 8 && olay.target === el.panelTutamac) {
+      cekmeceGenislet(!genis);
+    }
+  }
+  for (const hedef of [el.panelTutamac, el.panel.querySelector('.panel-ust')]) {
+    hedef.addEventListener('pointerdown', surukleBasla);
+  }
+  window.addEventListener('pointerup', surukleBitir);
+  window.addEventListener('pointercancel', () => {
+    surukle = null;
+  });
+  el.panelTutamac.addEventListener('keydown', (olay) => {
+    if (olay.key === 'Enter' || olay.key === ' ') {
+      olay.preventDefault();
+      olay.stopPropagation();
+      cekmeceGenislet(!el.panel.classList.contains('genis'));
+    }
+  });
+  // Küçük çekmecede metne dokunmak da genişletir (geniş çekmecede metin kayar)
+  el.panelGovde.addEventListener('click', (olay) => {
+    if (!MOBIL.matches || el.panel.classList.contains('genis')) return;
+    if (olay.target instanceof Element && olay.target.closest('button')) return;
+    cekmeceGenislet(true);
+  });
+  // Geniş çekmecede içerik en üstteyken aşağı kaydırma çekmeceyi küçültür
+  let govdeDokunus = null;
+  el.panelGovde.addEventListener('touchstart', (olay) => {
+    govdeDokunus = el.panelGovde.scrollTop <= 0 ? olay.touches[0].clientY : null;
+  }, { passive: true });
+  el.panelGovde.addEventListener('touchend', (olay) => {
+    if (govdeDokunus === null || !el.panel.classList.contains('genis')) return;
+    const dy = olay.changedTouches[0].clientY - govdeDokunus;
+    govdeDokunus = null;
+    if (dy > 60 && el.panelGovde.scrollTop <= 0) cekmeceGenislet(false);
+  }, { passive: true });
+
+  const yerlesimDegisti = () => {
+    if (!MOBIL.matches) el.panel.classList.remove('genis');
+    serbestAlanOlc();
+  };
+  window.addEventListener('resize', yerlesimDegisti);
+  MOBIL.addEventListener('change', yerlesimDegisti);
 
   $('panel-onceki').addEventListener('click', () => olaylar.onceki());
   $('panel-sonraki').addEventListener('click', () => olaylar.sonraki());
@@ -266,11 +387,13 @@ export function arayuzKur(olaylar) {
   dilDegisince(() => {
     menuYaz();
     if (panelId && el.panel.classList.contains('acik')) paneliDoldur(panelId, { kaydirmayiKoru: true });
+    cekmeceGenislet(el.panel.classList.contains('genis'));
     kaydiriciGuncelle();
     oynatEtiketiYaz();
     turBasligiYaz();
     sonSureAnahtari = null;
     gecenSureYaz(sonGun);
+    sonCanli = null;
     if (ipucuUretec && el.ipucu.classList.contains('gorunur')) el.ipucu.innerHTML = ipucuUretec();
   });
 
@@ -321,14 +444,38 @@ export function arayuzKur(olaylar) {
       } else {
         paneliDoldur(id);
         el.panelGovde.classList.remove('degisiyor');
+        cekmeceGenislet(false);
         el.panel.classList.add('acik');
         el.panel.setAttribute('aria-hidden', 'false');
+        serbestAlanOlc();
       }
     },
 
     panelGizle() {
-      el.panel.classList.remove('acik');
+      el.panel.classList.remove('acik', 'genis');
       el.panel.setAttribute('aria-hidden', 'true');
+      serbestAlanOlc();
+    },
+
+    /** Gövdenin panellerin kapatmadığı dikey alanı: { ust, alt } (piksel). */
+    serbestAlan: () => serbest,
+
+    /** Paneldeki kuyruklu yıldızın Güneş'e canlı uzaklığı (AB); yalnızca değişince yazılır. */
+    canliUzaklik(id, rAB, etkinlik) {
+      if (!canliMetin || id !== panelId) return;
+      const anahtar = `${rAB.toFixed(rAB < 10 ? 2 : 1)}|${etkinlik > 0.02}`;
+      if (anahtar === sonCanli) return;
+      sonCanli = anahtar;
+      enberiDugme.hidden = etkinlik > 0.02;
+      canliMetin.textContent = t(etkinlik > 0.02 ? 'panel.canliKuyruklu' : 'panel.canli', {
+        ab: sayiBicimle(rAB, rAB < 10 ? 2 : 1),
+      });
+    },
+
+    /** Hız kaydırıcısını verilen değere (gün/sn) getirir; uygulanan hızı döndürür. */
+    hizAyarla(gunSn) {
+      el.kaydirici.value = String(hizdanKaydiriciya(gunSn));
+      return kaydiriciGuncelle();
     },
 
     duraklatildi(durdu) {

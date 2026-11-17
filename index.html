@@ -97,6 +97,7 @@
 
   <!-- Bilgi paneli -->
   <aside id="panel" class="cam" aria-label="Gövde bilgileri" data-i18n-aria="panel.aria" aria-hidden="true">
+    <button class="panel-tutamac" id="panel-tutamac" type="button" aria-expanded="false" aria-label="Paneli genişlet" data-i18n-aria="panel.genislet"></button>
     <div class="panel-ust">
       <span class="panel-tur" id="panel-tur"></span>
       <div class="panel-dugmeler">
@@ -113,6 +114,7 @@
     </div>
     <div class="panel-govde" id="panel-govde">
       <h2 id="panel-ad" aria-live="polite"></h2>
+      <div class="panel-eylem" id="panel-eylem"></div>
       <p class="panel-aciklama" id="panel-aciklama"></p>
       <dl class="veriler" id="panel-veriler"></dl>
       <div class="panel-uydular" id="panel-uydular"></div>
@@ -138,6 +140,8 @@
       <dl class="kisayollar">
         <div><dt><kbd>0</kbd></dt><dd data-i18n="yardim.gunes">Güneş</dd></div>
         <div><dt><kbd>1</kbd>–<kbd>8</kbd></dt><dd data-i18n="yardim.gezegenler">Gezegenler (Merkür → Neptün)</dd></div>
+        <div><dt><kbd>9</kbd></dt><dd data-i18n="yardim.pluton">Plüton</dd></div>
+        <div><dt><kbd>H</kbd></dt><dd data-i18n="yardim.halley">Halley Kuyruklu Yıldızı</dd></div>
         <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-i18n="yardim.komsu">Önceki / sonraki gövde</dd></div>
         <div><dt><kbd data-i18n="yardim.bosluk">Boşluk</kbd></dt><dd data-i18n="yardim.duraklat">Duraklat / oynat</dd></div>
         <div><dt><kbd>Esc</kbd></dt><dd data-i18n="yardim.genel">Genel görünüm</dd></div>
@@ -169,11 +173,11 @@
       var metin = {
         tr: {
           baslik: 'Yerel sunucu gerekli',
-          metin: 'Bu sayfa doğrudan dosyadan açılamaz. Klasördeki "Güneş Sistemi.command" dosyasına çift tıkla ya da klasörde "python3 -m http.server 8773" komutunu çalıştırıp http://localhost:8773 adresini aç.'
+          metin: 'Bu sayfa doğrudan dosyadan açılamaz. Klasördeki "Güneş Sistemi.command" (Mac) ya da "Güneş Sistemi.bat" (Windows) dosyasına çift tıkla ya da klasörde "python3 -m http.server 8773" komutunu çalıştırıp http://localhost:8773 adresini aç.'
         },
         en: {
           baslik: 'A local server is needed',
-          metin: 'This page can\'t be opened straight from the file. Double-click "Güneş Sistemi.command" in the folder, or run "python3 -m http.server 8773" in the folder and open http://localhost:8773.'
+          metin: 'This page can\'t be opened straight from the file. Double-click "Güneş Sistemi.command" (Mac) or "Güneş Sistemi.bat" (Windows) in the folder, or run "python3 -m http.server 8773" in the folder and open http://localhost:8773.'
         }
       }[dil];
       document.documentElement.lang = dil;

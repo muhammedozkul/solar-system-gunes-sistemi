@@ -21,6 +21,8 @@ import {
   halkaMalzemesi,
   halkaGolgesiEkle,
   yildizMalzemesi,
+  komaMalzemesi,
+  kuyrukMalzemesi,
 } from './shaders.js';
 
 const DERECE = Math.PI / 180;
@@ -40,9 +42,25 @@ function rastgeleUret(tohum) {
   };
 }
 
-/** Kepler denkleminin küçük dış merkezlikler için seri açılımı: ortalama → gerçek anomali. */
+/**
+ * Ortalama anomaliden gerçek anomali: Kepler denklemi (M = E − e·sin E) Newton
+ * yöntemiyle çözülür. Plüton (e ≈ 0,25) ve Halley (e ≈ 0,97) gibi basık
+ * yörüngelerde seri açılımı yetersiz kalır.
+ */
 function gercekAnomali(M, e) {
-  return M + 2 * e * Math.sin(M) + 1.25 * e * e * Math.sin(2 * M);
+  M = Math.atan2(Math.sin(M), Math.cos(M)); // [-π, π]
+  let E = e < 0.8 ? M : M >= 0 ? Math.PI : -Math.PI;
+  for (let i = 0; i < 40; i++) {
+    const d = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    E -= d;
+    if (Math.abs(d) < 1e-10) break;
+  }
+  return 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2));
+}
+
+/** Dış merkez anomaliden gerçek anomali (yörünge çizgisini eşit aralıklı örneklemek için). */
+function dismerkezdenGercek(E, e) {
+  return 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2));
 }
 
 /**
@@ -317,7 +335,10 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, goky
         bulut: doku('2k_earth_clouds.jpg'),
       });
     } else {
-      malzeme = new THREE.MeshLambertMaterial({ map: doku(v.doku) });
+      malzeme = new THREE.MeshLambertMaterial({
+        map: doku(v.doku),
+        color: new THREE.Color(v.ton || '#ffffff'),
+      });
       if (v.kabartma) {
         malzeme.bumpMap = doku(v.doku);
         malzeme.bumpScale = R * 0.025;
@@ -456,7 +477,174 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, goky
     return kayit;
   }
 
-  for (const v of GOVDELER.slice(1)) gezegenKur(v);
+  // ---- Kuyruklu yıldız ----------------------------------------------------
+  // Çekirdek, koma (parıltı) ve iki kuyruk: düz, mavimsi iyon kuyruğu her zaman
+  // Güneş'in tam tersini gösterir; sarımsı toz kuyruğu ise yörüngede geride
+  // kalarak kavis çizer. Kuyruklar Güneş'e ~6 AB'den yakınken belirir.
+  function kuyrukluKur(v) {
+    const R = v.yaricap;
+    const yorungeAB = {
+      a: v.a,
+      e: v.e,
+      egim: v.egim * DERECE,
+      dugum: v.dugum * DERECE,
+      enberi: v.enberi * DERECE,
+    };
+
+    /** Gerçek AB konumunu bulur, Güneş'e uzaklığı sahne ölçeğine sıkıştırır; AB uzaklığını döndürür. */
+    function konumBul(nu, hedef) {
+      yorungeKonumu(yorungeAB, nu, hedef);
+      const rAB = hedef.length();
+      hedef.multiplyScalar(olcekUzaklik(rAB) / rAB);
+      return rAB;
+    }
+    const anomali = (gun) => gercekAnomali(((gun - v.enberiGun) / v.yil) * TAU, v.e);
+
+    const sistem = new THREE.Group();
+    sahne.add(sistem);
+    const egim = new THREE.Group();
+    egim.rotation.z = -v.egiklik * DERECE;
+    sistem.add(egim);
+
+    const malzeme = new THREE.MeshLambertMaterial({
+      map: doku(v.doku),
+      color: new THREE.Color(v.ton),
+      bumpMap: doku(v.doku),
+      bumpScale: R * 0.05,
+    });
+    const ag = new THREE.Mesh(kureKucuk, malzeme);
+    const b = v.bicim || [1, 1, 1];
+    ag.scale.set(R * b[0], R * b[1], R * b[2]);
+    egim.add(ag);
+
+    // Koma: kameraya dönük düzlemde yumuşak parıltı
+    const komaMat = komaMalzemesi();
+    const koma = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), komaMat);
+    // Koma çekirdeği sarar: çekirdeğin önünde de parlar (kara leke gibi görünmesin)
+    komaMat.depthTest = false;
+    koma.renderOrder = 6;
+    sistem.add(koma);
+
+    // Kuyruk parçacıkları: konumlar her karede gölgelendiricide hesaplanır
+    const ADET = 9000;
+    const rnd = rastgeleUret(1986);
+    const tohum = new Float32Array(ADET * 4);
+    const tip = new Float32Array(ADET);
+    for (let i = 0; i < ADET; i++) {
+      tohum[i * 4] = rnd();
+      tohum[i * 4 + 1] = rnd();
+      // Kesitte yuvarlak, merkeze yığılan dağılım
+      const aci = rnd() * TAU;
+      const yaricap = Math.sqrt(rnd()) * (0.4 + 0.6 * rnd());
+      tohum[i * 4 + 2] = Math.cos(aci) * yaricap;
+      tohum[i * 4 + 3] = Math.sin(aci) * yaricap;
+      tip[i] = i < ADET * 0.42 ? 0 : 1; // 0: iyon, 1: toz
+    }
+    const kuyrukGeo = new THREE.BufferGeometry();
+    kuyrukGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ADET * 3), 3));
+    kuyrukGeo.setAttribute('aTohum', new THREE.BufferAttribute(tohum, 4));
+    kuyrukGeo.setAttribute('aTip', new THREE.BufferAttribute(tip, 1));
+    const kuyrukMat = kuyrukMalzemesi(pikselOrani);
+    const kuyruk = new THREE.Points(kuyrukGeo, kuyrukMat);
+    kuyruk.frustumCulled = false;
+    kuyruk.renderOrder = 7;
+    sahne.add(kuyruk);
+
+    const etiket = etiketOlustur(v, 'etiket-kuyruklu');
+    etiket.position.y = R * 2.2;
+    sistem.add(etiket);
+
+    // Yörünge çizgisi dış merkez anomaliye göre eşit örneklenir: enberi çevresi
+    // seyrek, enöte çevresi gereksiz sık olmasın
+    const noktalar = [];
+    const ADIM = 720;
+    for (let i = 0; i < ADIM; i++) {
+      const E = (i / ADIM) * TAU;
+      const nokta = new THREE.Vector3();
+      konumBul(dismerkezdenGercek(E, v.e), nokta);
+      noktalar.push(nokta);
+    }
+    const cizgi = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(noktalar),
+      new THREE.LineBasicMaterial({
+        color: YORUNGE_RENGI.clone(),
+        transparent: true,
+        opacity: 0.13,
+        depthWrite: false,
+      })
+    );
+    cizgi.userData.tabanOpaklik = 0.13;
+    sahne.add(cizgi);
+    yorungeNesneleri.push(cizgi);
+
+    const durum = { rAB: v.a, etkinlik: 0 };
+
+    const kayit = govdeKaydet({
+      id: v.id,
+      veri: v,
+      tip: 'kuyruklu',
+      yaricap: R,
+      dugum: sistem,
+      isabet: isabetEkle(sistem),
+      etiket,
+      yorunge: cizgi,
+      // Kuyruk uzunken kamera daha geriden bakar ki kuyruk kadraja sığsın
+      get bakisCarpani() {
+        return 30 + durum.etkinlik * 150;
+      },
+      enAzPiksel: 12,
+      kuyrukDurumu: durum,
+    });
+
+    const sonraki = new THREE.Vector3();
+    const gunesYon = new THREE.Vector3();
+    const geri = new THREE.Vector3();
+    guncelleyiciler.push((z) => {
+      durum.rAB = konumBul(anomali(z.simGun), sistem.position);
+      // Hareket yönü: bir gün sonraki konumdan
+      konumBul(anomali(z.simGun + 1), sonraki);
+      geri.copy(sistem.position).sub(sonraki);
+      if (geri.lengthSq() < 1e-12) geri.set(1, 0, 0);
+      geri.normalize();
+      gunesYon.copy(sistem.position).normalize();
+
+      // Etkinlik: ~6 AB'de başlar, enberide (0,59 AB) en yüksek
+      const x = THREE.MathUtils.clamp((6 - durum.rAB) / (6 - 0.59), 0, 1);
+      durum.etkinlik = x * x * (3 - 2 * x);
+
+      const u = kuyrukMat.uniforms;
+      u.uCekirdek.value.copy(sistem.position);
+      u.uGunesYon.value.copy(gunesYon);
+      u.uGeri.value.copy(geri);
+      u.uUzunluk.value = 4 + durum.etkinlik * 52;
+      u.uParlak.value = durum.etkinlik;
+      kuyruk.visible = durum.etkinlik > 0.002;
+
+      komaMat.uniforms.uParlak.value = 0.16 + durum.etkinlik * 0.85;
+      koma.scale.setScalar(R * (3.2 + durum.etkinlik * 12));
+
+      ag.rotation.y = (z.donusGun / v.gun) * TAU;
+    });
+
+    // Koma her karede kameraya döner; kuyruk zamanı gerçek zamanla akar
+    kameraIzleyiciler.push((kamera, dt, ekranYukseklik) => {
+      koma.quaternion.copy(kamera.quaternion);
+      kuyrukMat.uniforms.uZaman.value += dt;
+      kuyrukMat.uniforms.uEkranYukseklik.value = ekranYukseklik;
+    });
+    pikselOraniIzleyiciler.push((oran) => {
+      kuyrukMat.uniforms.uPikselOrani.value = oran;
+    });
+    return kayit;
+  }
+
+  const kameraIzleyiciler = [];
+  const pikselOraniIzleyiciler = [];
+
+  for (const v of GOVDELER.slice(1)) {
+    if (v.tip === 'kuyruklu') kuyrukluKur(v);
+    else gezegenKur(v);
+  }
 
   // ---- Asteroit kuşağı ----------------------------------------------------
   // Mars ile Jüpiter arası; üç katman Kepler'e uygun farklı hızlarda döner.
@@ -633,7 +821,9 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, goky
   let yildizZamani = 0;
 
   // Etiket çakışmalarında kimin önce yerleşeceği
-  const ONCELIK = ['gunes', 'jupiter', 'saturn', 'dunya', 'mars', 'venus', 'neptun', 'uranus', 'merkur'];
+  const ONCELIK = [
+    'gunes', 'jupiter', 'saturn', 'dunya', 'mars', 'venus', 'neptun', 'uranus', 'merkur', 'halley', 'pluton',
+  ];
   const oncelikSirasi = [...govdeler.values()].sort((a, b) => {
     const sa = a.tip === 'uydu' ? 100 : ONCELIK.indexOf(a.id);
     const sb = b.tip === 'uydu' ? 100 : ONCELIK.indexOf(b.id);
@@ -651,8 +841,9 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, goky
     },
 
     /** Kamera o karedeki son konumunu aldıktan sonra çağrılır. */
-    kameraIzle(kamera, gercekDt) {
+    kameraIzle(kamera, gercekDt, ekranYukseklik) {
       gokyuzu.position.copy(kamera.position);
+      for (const izle of kameraIzleyiciler) izle(kamera, gercekDt, ekranYukseklik);
       korona.quaternion.copy(kamera.quaternion); // korona her zaman kameraya dönük
       yildizZamani += gercekDt; // yıldız titreşimi simülasyon duraklasa da sürer
       yildizMat.uniforms.uZaman.value = yildizZamani;
@@ -660,6 +851,7 @@ export function gunesSistemiKur({ sahne, yonetici, anizotropi, pikselOrani, goky
 
     pikselOraniAyarla(oran) {
       yildizMat.uniforms.uPikselOrani.value = oran;
+      for (const izle of pikselOraniIzleyiciler) izle(oran);
     },
 
     /** Dil değişince 3B etiketlerdeki adları yeniden yazar. */

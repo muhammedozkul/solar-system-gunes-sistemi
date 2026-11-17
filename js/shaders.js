@@ -527,3 +527,124 @@ export function yildizMalzemesi(pikselOrani) {
     depthWrite: false,
   });
 }
+
+// ---- Kuyruklu yıldız -------------------------------------------------------
+
+/**
+ * Koma: çekirdeği saran gaz ve toz bulutu. Kameraya dönük bir düzlemde çizilir;
+ * `uParlak` Güneş'e yaklaştıkça artar (enberide 1'i aşar, bloom hafifçe parlatır).
+ */
+export function komaMalzemesi() {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uParlak: { value: 0.2 },
+    },
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform float uParlak;
+      varying vec2 vUv;
+      void main() {
+        vec2 p = vUv * 2.0 - 1.0;
+        float r2 = dot(p, p);
+        if (r2 > 1.0) discard;
+        float hale = exp(-r2 * 5.0) * (1.0 - r2);
+        float cekirdek = exp(-r2 * 60.0);
+        vec3 renk = vec3(0.6, 0.82, 1.0) * hale * 0.55 + vec3(1.0, 0.97, 0.9) * cekirdek;
+        gl_FragColor = vec4(renk * uParlak, 1.0);
+        ${CIKIS}
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+}
+
+/**
+ * Kuyruk parçacıkları. Her parçacığın konumu tamamen burada hesaplanır:
+ * `f` kuyruk boyunca 0 (çekirdek) → 1 (uç) ilerler ve gerçek zamanla akar.
+ *   aTip 0 → iyon kuyruğu: dar, düz, Güneş'in tam tersine; mavimsi
+ *   aTip 1 → toz kuyruğu: geniş, yörüngede geride kalarak kavis çizer; sarımsı
+ */
+export function kuyrukMalzemesi(pikselOrani) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uCekirdek: { value: new THREE.Vector3() },
+      uGunesYon: { value: new THREE.Vector3(1, 0, 0) },
+      uGeri: { value: new THREE.Vector3(0, 0, 1) },
+      uUzunluk: { value: 10 },
+      uParlak: { value: 0 },
+      uZaman: { value: 0 },
+      uPikselOrani: { value: pikselOrani },
+      uEkranYukseklik: { value: 800 },
+    },
+    vertexShader: /* glsl */ `
+      attribute vec4 aTohum;
+      attribute float aTip;
+      uniform vec3 uCekirdek;
+      uniform vec3 uGunesYon;
+      uniform vec3 uGeri;
+      uniform float uUzunluk;
+      uniform float uParlak;
+      uniform float uZaman;
+      uniform float uPikselOrani;
+      uniform float uEkranYukseklik;
+      varying vec3 vRenk;
+      varying float vAlfa;
+
+      void main() {
+        float hiz = mix(0.12, 0.05, aTip) * (0.7 + aTohum.y * 0.6);
+        float f = fract(aTohum.x + uZaman * hiz);
+
+        vec3 ileri = normalize(uGunesYon);
+        vec3 yardimci = abs(ileri.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 d1 = normalize(cross(ileri, yardimci));
+        vec3 d2 = cross(ileri, d1);
+        vec3 kesit = d1 * aTohum.z + d2 * aTohum.w;
+        float L = uUzunluk;
+
+        vec3 p;
+        if (aTip < 0.5) {
+          p = uCekirdek + ileri * (f * L * 1.25) + kesit * L * (0.006 + f * 0.035);
+        } else {
+          vec3 eksen = ileri * f + uGeri * (f * f * 0.6);
+          p = uCekirdek + eksen * (L * 0.8) + kesit * L * (0.02 + f * 0.17);
+        }
+
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+
+        // Dünya birimindeki boyutu piksele çevir (perspektif küçülmesi)
+        float boyut = L * mix(0.0055, 0.013, aTip) * (0.6 + f * 1.8);
+        float px = boyut * projectionMatrix[1][1] * 0.5 * uEkranYukseklik / max(-mv.z, 0.001);
+        gl_PointSize = clamp(px, 1.0, 40.0) * uPikselOrani;
+
+        float giris = smoothstep(0.0, 0.05, f);
+        float sonus = pow(1.0 - f, mix(1.7, 1.25, aTip));
+        vAlfa = giris * sonus * uParlak * mix(0.42, 0.085, aTip);
+        // 1 pikselin altına inen parçacık, alanı oranında sönükleşir (uzakta parlamasın)
+        vAlfa *= clamp(px * px, 0.0, 1.0);
+        vRenk = mix(vec3(0.45, 0.72, 1.0), vec3(1.0, 0.86, 0.62), aTip);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      varying vec3 vRenk;
+      varying float vAlfa;
+      void main() {
+        vec2 q = gl_PointCoord - 0.5;
+        float a = exp(-dot(q, q) * 14.0); // yumuşak, kenarsız leke
+        gl_FragColor = vec4(vRenk * vAlfa * a, 1.0);
+        ${CIKIS}
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+}

@@ -67,6 +67,12 @@ export const ARAYUZ = {
   'panel.buyukUydular': 'Major moons',
   'panel.uydusu': 'Moon',
   'panel.gezegeni': 'Planet',
+  'panel.cuceGezegeni': 'Dwarf planet',
+  'panel.genislet': 'Expand panel',
+  'panel.daralt': 'Collapse panel',
+  'panel.enberiyeGit': 'Watch it near the Sun →',
+  'panel.canli': 'Distance from the Sun: {ab} AU · no tail, too far out',
+  'panel.canliKuyruklu': 'Distance from the Sun: {ab} AU · tail visible',
 
   // Menü
   'menu.aria': 'Sun and planets',
@@ -76,6 +82,8 @@ export const ARAYUZ = {
   'yardim.kapat': 'Close',
   'yardim.gunes': 'The Sun',
   'yardim.gezegenler': 'Planets (Mercury → Neptune)',
+  'yardim.pluton': 'Pluto',
+  'yardim.halley': 'Halley\'s Comet',
   'yardim.komsu': 'Previous / next object',
   'yardim.bosluk': 'Space',
   'yardim.duraklat': 'Pause / play',
@@ -430,6 +438,66 @@ export const GOVDE = {
       'Its winds top 2,000 km/h, faster than the speed of sound.',
       'It was the first planet found by mathematical prediction rather than by observation (1846).',
       'It only completed its first full orbit of the Sun since its discovery in 2011.',
+    ],
+  },
+
+  pluton: {
+    ad: 'Pluto',
+    tur: 'Dwarf planet · Kuiper belt',
+    aciklama:
+      'The best-known member of the Kuiper belt. Discovered in 1930, it counted as a planet for 76 years before being reclassified as a dwarf planet in 2006. Its stretched orbit sometimes brings it closer to the Sun than Neptune.',
+    veriler: [
+      ['Diameter', '2,377 km'],
+      ['Distance from the Sun', '5.9 billion km · 39.5 AU'],
+      ['Day', '6 d 9 h, retrograde'],
+      ['Year', '248 Earth years'],
+      ['Moons', '5'],
+      ['Surface temperature', '≈ −230 °C'],
+      ['Gravity', '0.62 m/s²'],
+    ],
+    bilgiler: [
+      'New Horizons flew past in 2015 and found a huge heart-shaped plain of nitrogen ice.',
+      'Pluto and Charon are locked to each other: each always shows the other the same face.',
+      'From 1979 to 1999 it was closer to the Sun than Neptune; the orbits cross, but the two never collide.',
+    ],
+  },
+
+  charon: {
+    ad: 'Charon',
+    tur: 'Natural satellite · Pluto',
+    aciklama:
+      'Pluto\'s largest moon, more than half Pluto\'s size. The two circle a shared point that lies outside Pluto, which is why they are often called a double dwarf planet.',
+    veriler: [
+      ['Diameter', '1,212 km'],
+      ['Distance from Pluto', '19,596 km'],
+      ['Orbit around Pluto', '6.39 days'],
+      ['Surface temperature', '≈ −220 °C'],
+      ['Gravity', '0.29 m/s²'],
+    ],
+    bilgiler: [
+      'Its reddish north polar cap is thought to come from methane that escapes Pluto and settles on Charon.',
+      'It was discovered in 1978; only then could Pluto\'s mass be worked out from Charon\'s orbit.',
+    ],
+  },
+
+  halley: {
+    ad: 'Halley',
+    tur: 'Comet · short-period',
+    aciklama:
+      'The only naked-eye comet that can return twice in a human lifetime. It turned back at the far end of its orbit in December 2023 and will swing past the Sun again in 2061. Near the Sun its ices boil off and two tails form.',
+    veriler: [
+      ['Nucleus', '≈ 15 × 8 km'],
+      ['Orbital period', '≈ 76 years'],
+      ['Closest to the Sun', '0.59 AU (inside Venus)'],
+      ['Farthest from the Sun', '35 AU (beyond Neptune)'],
+      ['Last pass', '9 February 1986'],
+      ['Next pass', '28 July 2061'],
+    ],
+    bilgiler: [
+      'The straight blue tail is ionised gas pushed by the solar wind, so it always points directly away from the Sun; the curved yellowish tail is dust that lags behind along the orbit.',
+      'Edmond Halley realised the sightings of 1531, 1607 and 1682 were one object and predicted its return in 1758.',
+      'The Giotto probe photographed its nucleus in 1986: a surface darker than coal.',
+      'The Eta Aquariid (May) and Orionid (October) meteor showers come from dust Halley left behind.',
     ],
   },
 };

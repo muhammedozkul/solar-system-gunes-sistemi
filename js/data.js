@@ -40,7 +40,7 @@ export function olcekUyduYaricap(dunyaYaricapi, ebeveynDunyaYaricapi) {
   return Math.max(0.06, olcekYaricap(ebeveynDunyaYaricapi) * Math.pow(oran, 0.85));
 }
 
-/** Güneş'e uzaklık: 18 + 56·√AB → Merkür ≈ 53, Dünya = 74, Neptün ≈ 325 birim. */
+/** Güneş'e uzaklık: 18 + 56·√AB → Merkür ≈ 53, Dünya = 74, Neptün ≈ 325, Plüton ≈ 370 birim. */
 export function olcekUzaklik(ab) {
   return 18 + 56 * Math.sqrt(ab);
 }
@@ -244,9 +244,52 @@ export const GOVDELER = [
     egiklik: 28.32,
     atmosfer: { renk: '#5f86ff', kalinlik: 1.07, siddet: 0.55 },
   },
+  {
+    // Cüce gezegen. Solar System Scope'ta Plüton dokusu yok: Ay dokusu ton ile boyanır.
+    id: 'pluton',
+    renkler: ['#ecd6bd', '#8a6c56'],
+    doku: '2k_moon.jpg',
+    ton: '#e6c3a2',
+    kabartma: true,
+    yaricap: 0.1868,
+    a: 39.482, e: 0.2488, egim: 17.16, dugum: 110.3, enberi: 224.07, L0: 238.93,
+    yil: 90560,
+    gun: 6.387,
+    egiklik: 122.53,
+    uydular: [
+      {
+        id: 'charon',
+        renkler: ['#c4bcb4', '#5d5650'],
+        doku: '2k_moon.jpg',
+        ton: '#b9b0a6',
+        yaricap: 0.0951,
+        uzaklik: 1.7,
+        periyot: 6.387,
+        kabartma: true,
+      },
+    ],
+  },
+  {
+    // Halley Kuyruklu Yıldızı. Yörünge öğeleri JPL'den (1986 enberi geçişi):
+    //   enberiGun: enberiden geçiş anı, J2000'den bu yana gün (1986-02-09)
+    // Çok basık yörünge sahnede ölçeklenince bozulmasın diye konum gerçek AB
+    // cinsinden hesaplanır, yalnızca Güneş'e uzaklık olcekUzaklik ile sıkıştırılır.
+    id: 'halley',
+    tip: 'kuyruklu',
+    renkler: ['#e4f4ff', '#5f86ad'],
+    doku: '2k_moon.jpg',
+    ton: '#8f857b',
+    a: 17.834, e: 0.96714, egim: 162.26, dugum: 58.42, enberi: 169.75,
+    enberiGun: -5074.04,
+    yil: 27509,
+    gun: 2.2,
+    yaricap: 0.2, // sahne birimi (çekirdek gerçekte ≈ 15 × 8 km; görünür kalsın diye büyütüldü)
+    bicim: [1.0, 0.62, 0.56],
+    egiklik: 20,
+  },
 ];
 
-/** Menüde ve turda kullanılan ana sıra: Güneş + 8 gezegen. */
+/** Menüde ve turda kullanılan ana sıra: Güneş, 8 gezegen, Plüton ve Halley. */
 export const ANA_SIRA = GOVDELER.map((g) => g.id);
 
 /** Kimlikten veri kaydına (uydular dâhil) hızlı erişim. */

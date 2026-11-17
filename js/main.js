@@ -127,6 +127,7 @@ function basla() {
     yorungeler: hazirsa(() => yorungeleriDegistir()),
     etiketler: hazirsa(() => etiketleriDegistir()),
     genelGorunum: hazirsa(() => genelGorunum()),
+    enberiyeGit: hazirsa((id) => enberiyeGit(id)),
   };
   const ui = arayuzKur(olaylar);
   durum.hiz = ui.baslangicHizi();
@@ -308,7 +309,7 @@ function basla() {
     const oran = genislik / yukseklik;
     const carpan = oran < 1 ? Math.min(1.9, Math.pow(1 / oran, 0.7)) : 1;
     // Mobilde alttan çıkan çekmece ekranın bir kısmını kapatır; biraz daha uzaktan bak
-    return genislik <= 720 ? carpan * 1.45 : carpan;
+    return genislik <= 720 ? carpan * 1.3 : carpan;
   }
 
   function genelOfset() {
@@ -330,6 +331,7 @@ function basla() {
     durum.odak = g;
     durum.sonAci = gunesAcisi(g);
     kontroller.enablePan = false;
+    baglantiYaz(id);
 
     ui.sec(id);
     sistem.yorungeVurgula(id);
@@ -347,6 +349,13 @@ function basla() {
       if (yon.lengthSq() < 1e-6) yon.set(0, 0, 1);
       yon.normalize();
       yon.y = 0.26;
+    } else if (g.tip === 'kuyruklu') {
+      // Kuyruk Güneş'in tersini gösterir: yandan bakılırsa boyu kısalmadan görünür
+      yon.copy(konum);
+      yon.y = 0;
+      if (yon.lengthSq() < 1e-6) yon.set(1, 0, 0);
+      yon.normalize().applyAxisAngle(Y_EKSENI, Math.PI / 2);
+      yon.y = 0.42;
     } else {
       // Güneş'e bakan (aydınlık) taraftan, biraz yandan ve yukarıdan yaklaş:
       // böylece hem gündüz yüzü hem terminatör görünür
@@ -366,6 +375,7 @@ function basla() {
 
   function genelGorunum(sure = UCUS_SURESI) {
     durum.odak = null;
+    baglantiYaz(null);
     durum.panelAcik = false;
     kontroller.enablePan = true;
     ui.sec(null);
@@ -394,9 +404,59 @@ function basla() {
     odaklan(ANA_SIRA[sira]);
   }
 
+  // ---- Kuyruklu yıldız: zamanda ileri atlama ---------------------------------
+
+  /**
+   * Simülasyon saatini kuyruklu yıldızın bir sonraki enberi geçişinden kısa bir
+   * süre öncesine taşır ve kamerayı ona uçurur. Şu an zaten enberi
+   * çevresindeyse yerinde kalır.
+   */
+  function enberiyeGit(id) {
+    const g = sistem.govdeler.get(id);
+    if (!g || g.tip !== 'kuyruklu') return;
+    const { enberiGun, yil } = g.veri;
+    const ONCE = 70; // enberiden kaç gün önceye
+    const n = Math.ceil((zaman.simGun - enberiGun - ONCE) / yil);
+    const hedefGun = enberiGun + n * yil - ONCE;
+    if (hedefGun > zaman.simGun) zaman.simGun = hedefGun;
+    sistem.guncelle(zaman);
+    // Kuyruğu izlenebilir hızda göster
+    if (durum.hiz > 6) durum.hiz = ui.hizAyarla(4);
+    odaklan(id);
+  }
+
   // ---- Açılış -------------------------------------------------------------
 
+  /** Adres çubuğundaki #kimlik, seçili gövdeyi paylaşılabilir yapar (geçmişe kayıt eklemez). */
+  function baglantiYaz(id) {
+    const yeni = id ? `#${id}` : ' ';
+    if ((location.hash || ' ') === yeni) return;
+    try {
+      history.replaceState(null, '', id ? yeni : location.pathname + location.search);
+    } catch {
+      // Bazı gömülü görünümlerde geçmiş API'si kapalı olabilir
+    }
+  }
+
+  function baglantidakiGovde() {
+    const id = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+    return id && sistem.govdeler.has(id) ? id : null;
+  }
+
+  window.addEventListener('hashchange', () => {
+    if (!hazir) return;
+    const id = baglantidakiGovde();
+    if (id && (!durum.odak || durum.odak.id !== id)) odaklan(id);
+  });
+
   function acilis() {
+    const baglanti = baglantidakiGovde();
+    if (baglanti) {
+      // Paylaşılan bağlantı: kısa bir genel bakıştan sonra doğrudan gövdeye uç
+      odaklan(baglanti);
+      durum.ucus.sure = AZ_HAREKET ? 0.8 : 3.6;
+      return;
+    }
     ucusBaslat({
       hedefAl: (hedefVektor) => hedefVektor.set(0, 0, 0),
       ofset: genelOfset(),
@@ -601,9 +661,12 @@ function basla() {
       ui.ipucuGizle();
     }
 
-    if (tus >= '0' && tus <= '8' && tus.length === 1) {
+    if (tus >= '0' && tus <= '9' && tus.length === 1) {
       menuOdaginiBirak();
       odaklan(ANA_SIRA[Number(tus)]);
+    } else if (tus === 'h' || tus === 'H') {
+      menuOdaginiBirak();
+      odaklan('halley');
     } else if (tus === ' ') {
       duraklatDegistir();
     } else if (tus === 'Escape') {
@@ -710,18 +773,26 @@ function basla() {
     kamera.near = THREE.MathUtils.clamp(yuzeyUzaklik * 0.05, 0.01, 2);
 
     // Panel açıkken görüntü merkezini panelin kapatmadığı alana kaydır
+    // (mobilde: üst çubuk ile küçük çekmece arasındaki alanın ortası)
     const mobil = genislik <= 720;
     const hedefX = durum.panelAcik && !mobil ? Math.min(184, genislik * 0.14) : 0;
-    const hedefY = durum.panelAcik && mobil ? yukseklik * 0.19 : 0;
+    let hedefY = 0;
+    if (durum.panelAcik && mobil) {
+      const alan = ui.serbestAlan();
+      hedefY = Math.max(0, yukseklik / 2 - (alan.ust + alan.alt) / 2);
+    }
     const yaklasma = 1 - Math.exp(-dt * 4.5);
     kaydirma.x += (hedefX - kaydirma.x) * yaklasma;
     kaydirma.y += (hedefY - kaydirma.y) * yaklasma;
     kamera.setViewOffset(genislik, yukseklik, kaydirma.x, kaydirma.y, genislik, yukseklik);
     kamera.updateMatrixWorld();
 
-    sistem.kameraIzle(kamera, dt);
+    sistem.kameraIzle(kamera, dt, yukseklik);
     sistem.etiketleriGuncelle(kamera, odak, durum.etiketler, genislik, yukseklik);
     ui.gecenSure(zaman.simGun - baslangicGun);
+    if (odak && odak.kuyrukDurumu && durum.panelAcik) {
+      ui.canliUzaklik(odak.id, odak.kuyrukDurumu.rAB, odak.kuyrukDurumu.etkinlik);
+    }
 
     // İmleç: bir gövdenin üzerindeyken işaret parmağı
     if (uzerindeKontrol && sonFare) {

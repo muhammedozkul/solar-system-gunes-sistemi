@@ -10,6 +10,8 @@ Kurulum gerekmez; Windows, macOS ve telefonda Chrome, Edge, Safari ya da Firefox
 
 **macOS:** `Güneş Sistemi.command` dosyasına çift tıkla. Yerel bir sunucu başlar ve tarayıcıda `http://localhost:8773` açılır. Sunucu zaten çalışıyorsa yalnızca tarayıcı açılır. Kapatmak için açılan Terminal penceresinde `Ctrl+C`.
 
+**Windows:** `Güneş Sistemi.bat` dosyasına çift tıkla. [Python 3](https://www.python.org) kurulu olmalı (kurulumda "Add python.exe to PATH" kutusunu işaretle). Kapatmak için açılan siyah pencereyi kapat. Python kurmak istemiyorsan yukarıdaki canlı bağlantıyı kullan.
+
 **Elle:**
 
 ```bash
@@ -29,6 +31,7 @@ ES modülleri `file://` üzerinden yüklenemediği için `index.html` dosyasın�
 | Kaydır (genel görünümde) | Sağ tık ile sürükle |
 | Bir gövdeye git | Gövdeye, etiketine ya da alttaki menüye tıkla |
 | Güneş / gezegenler | `0` / `1`–`8` |
+| Plüton / Halley | `9` / `H` |
 | Önceki / sonraki | `←` / `→` |
 | Duraklat / oynat | `Boşluk` |
 | Genel görünüm | `Esc` |
@@ -36,7 +39,11 @@ ES modülleri `file://` üzerinden yüklenemediği için `index.html` dosyasın�
 | Otomatik tur | `T` |
 | Dil (Türkçe / İngilizce) | Sağ üstteki TR · EN düğmesi; seçim hatırlanır, ilk açılışta tarayıcı diline göre seçilir |
 
-Bir gövdeye gidildiğinde kamera onu yörüngesinde takip eder; bu sırada çevresinde dönüp yakınlaşabilirsin. Gezegenlerin bilgi panelindeki çiplerle uydulara (Ay, Phobos, Deimos, Io, Europa, Ganymede, Callisto, Titan) geçebilirsin.
+Bir gövdeye gidildiğinde kamera onu yörüngesinde takip eder; bu sırada çevresinde dönüp yakınlaşabilirsin. Gezegenlerin bilgi panelindeki çiplerle uydulara (Ay, Phobos, Deimos, Io, Europa, Ganymede, Callisto, Titan, Charon) geçebilirsin.
+
+**Paylaşılabilir bağlantı:** Bir gövde seçilince adres çubuğu değişir (ör. `…/#saturn`, `…/#halley`). Bu bağlantıyı açan kişi doğrudan o gövdeye uçar.
+
+**Telefonda:** Bilgi paneli alttan küçük açılır, gövde görünür kalır. Yukarı kaydır ya da metne dokun: genişler. Aşağı kaydır: önce küçülür, sonra kapanır.
 
 ## Neler var
 
@@ -44,6 +51,8 @@ Bir gövdeye gidildiğinde kamera onu yörüngesinde takip eder; bu sırada çev
 - Dünya: gece tarafında şehir ışıkları, okyanus parlaması, normal map, ayrı dönen bulutlar ve bulut gölgeleri, atmosfer parıltısı
 - Satürn: dokulu halka, halkanın gezegene ve gezegenin halkaya düşen gölgesi
 - Gerçek eksen eğiklikleri, dış merkezli ve eğik yörüngeler, gerçek periyot oranları
+- Plüton ve uydusu Charon (cüce gezegen; basık, Neptün'ün yörüngesini kesen yörünge)
+- Halley Kuyruklu Yıldızı: gerçek yörünge öğeleriyle bugünkü konumunda (≈ 35 AB). Güneş'e yaklaşınca koma ve iki kuyruk belirir: Güneş'in tam tersini gösteren mavi iyon kuyruğu ve yörüngede geride kalarak kavis çizen toz kuyruğu. Paneldeki **Güneş'e yaklaşınca izle** düğmesi zamanı 2061 geçişinin hemen öncesine taşır.
 - Asteroit kuşağı (3.000 kaya, InstancedMesh), Kuiper kuşağı, Samanyolu ve titreşen yıldızlar
 - Zaman denetimi (1 saat/sn – 2 yıl/sn), otomatik tur, Türkçe ve İngilizce arayüz ile bilgi panelleri
 
@@ -54,7 +63,9 @@ Gerçek oranlarla gezegenler ekranda görünmez; bu yüzden ölçek sıkıştır
 - Yarıçap: `(R / R_dünya)^0,55` (Dünya = 1 birim, Jüpiter ≈ 3,7 birim; Güneş 9 birime sabitlenmiştir)
 - Güneş'e uzaklık: `18 + 56·√AB`
 - Yörünge periyotları gerçektir. Kendi ekseninde dönüş ve uydu hareketi, yüksek hızlarda titremeye dönüşmemesi için sınırlı hızla ilerler; uydu periyotları karekökle sıkıştırılmıştır.
-- Başlangıçta gezegenler, J2000 ortalama yörünge öğelerinden hesaplanan yaklaşık bugünkü konumlarındadır.
+- Başlangıçta gezegenler, J2000 ortalama yörünge öğelerinden hesaplanan yaklaşık bugünkü konumlarındadır. Konumlar Kepler denkleminin sayısal çözümüyle bulunur.
+- Halley'in çok basık yörüngesinde konum gerçek AB cinsinden hesaplanır, yalnızca Güneş'e uzaklık aynı formülle sıkıştırılır; çekirdek görünür kalsın diye büyütülmüştür.
+- Solar System Scope'ta Plüton dokusu yoktur; Plüton ve Charon renklendirilmiş Ay dokusuyla gösterilir.
 
 ## Dosya yapısı
 
@@ -68,7 +79,7 @@ js/ui.js              Menü, bilgi paneli, zaman denetimi, yardım
 js/i18n.js            Dil seçimi, t() çeviri işlevi, sayı biçimleme
 js/metin-tr.js        Türkçe arayüz ve gövde metinleri
 js/metin-en.js        İngilizce arayüz ve gövde metinleri
-js/data.js            Gezegen verileri (sayısal), ölçek formülleri
+js/data.js            Gezegen, Plüton ve Halley verileri (sayısal), ölçek formülleri
 textures/             Gezegen dokuları
 vendor/three/         Three.js r160
 ```
@@ -79,3 +90,4 @@ vendor/three/         Three.js r160
 - [Three.js](https://threejs.org) r160 — MIT
 - Simplex gürültüsü: Ian McEwan / Ashima Arts — MIT
 - Fiziksel veriler: NASA Planetary Fact Sheet ve NASA Solar System Exploration
+- Halley yörünge öğeleri: JPL Small-Body Database

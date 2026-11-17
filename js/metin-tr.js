@@ -69,6 +69,12 @@ export const ARAYUZ = {
   'panel.buyukUydular': 'Büyük uydular',
   'panel.uydusu': 'Uydusu',
   'panel.gezegeni': 'Gezegeni',
+  'panel.cuceGezegeni': 'Cüce gezegeni',
+  'panel.genislet': 'Paneli genişlet',
+  'panel.daralt': 'Paneli küçült',
+  'panel.enberiyeGit': 'Güneş\'e yaklaşınca izle →',
+  'panel.canli': 'Güneş\'e uzaklık: {ab} AB · kuyruk yok, çok uzakta',
+  'panel.canliKuyruklu': 'Güneş\'e uzaklık: {ab} AB · kuyruk görünüyor',
 
   // Menü
   'menu.aria': 'Gövdeler',
@@ -78,6 +84,8 @@ export const ARAYUZ = {
   'yardim.kapat': 'Kapat',
   'yardim.gunes': 'Güneş',
   'yardim.gezegenler': 'Gezegenler (Merkür → Neptün)',
+  'yardim.pluton': 'Plüton',
+  'yardim.halley': 'Halley Kuyruklu Yıldızı',
   'yardim.komsu': 'Önceki / sonraki gövde',
   'yardim.bosluk': 'Boşluk',
   'yardim.duraklat': 'Duraklat / oynat',
@@ -432,6 +440,66 @@ export const GOVDE = {
       'Rüzgârları saatte 2.000 km\'yi aşar; ses hızından hızlıdır.',
       'Gözlemle değil, matematiksel hesapla bulunan ilk gezegendir (1846).',
       'Keşfinden bu yana Güneş çevresindeki ilk tam turunu ancak 2011\'de tamamladı.',
+    ],
+  },
+
+  pluton: {
+    ad: 'Plüton',
+    tur: 'Cüce gezegen · Kuiper kuşağı',
+    aciklama:
+      'Kuiper kuşağının en ünlü üyesi. 1930\'da bulundu, 76 yıl gezegen sayıldı, 2006\'da cüce gezegen olarak yeniden sınıflandı. Basık yörüngesi yüzünden bazen Neptün\'den bile Güneş\'e yakındır.',
+    veriler: [
+      ['Çap', '2.377 km'],
+      ['Güneş\'e uzaklık', '5,9 milyar km · 39,5 AB'],
+      ['Bir günü', '6 gün 9 sa, ters yönde'],
+      ['Bir yılı', '248 Dünya yılı'],
+      ['Uydu sayısı', '5'],
+      ['Yüzey sıcaklığı', '≈ −230 °C'],
+      ['Yerçekimi', '0,62 m/s²'],
+    ],
+    bilgiler: [
+      'New Horizons 2015\'te yanından geçti ve yüzeyinde kalp biçiminde, azot buzundan dev bir ova buldu.',
+      'Plüton ile Charon birbirine kilitlidir: ikisi de birbirine hep aynı yüzünü gösterir.',
+      '1979–1999 arasında Güneş\'e Neptün\'den daha yakındı; yörüngeler kesişse de çarpışmazlar.',
+    ],
+  },
+
+  charon: {
+    ad: 'Charon',
+    tur: 'Doğal uydu · Plüton',
+    aciklama:
+      'Plüton\'un en büyük uydusu; boyu Plüton\'un yarısından fazladır. İkisi ortak bir noktanın çevresinde dönerler ve bu nokta Plüton\'un dışında kalır; bu yüzden çoğu zaman çift cüce gezegen diye anılırlar.',
+    veriler: [
+      ['Çap', '1.212 km'],
+      ['Plüton\'a uzaklık', '19.596 km'],
+      ['Plüton çevresinde tur', '6,39 gün'],
+      ['Yüzey sıcaklığı', '≈ −220 °C'],
+      ['Yerçekimi', '0,29 m/s²'],
+    ],
+    bilgiler: [
+      'Kuzey kutbundaki kızıl lekenin, Plüton\'dan kaçıp Charon\'a ulaşan metan gazından oluştuğu düşünülür.',
+      '1978\'de bulundu; Plüton\'un kütlesi ancak onun yörüngesinden hesaplanabildi.',
+    ],
+  },
+
+  halley: {
+    ad: 'Halley',
+    tur: 'Kuyruklu yıldız · kısa dönemli',
+    aciklama:
+      'Çıplak gözle görülebilen ve bir insan ömründe iki kez dönebilen tek kuyruklu yıldız. Aralık 2023\'te yörüngesinin en uzak noktasından döndü; Güneş\'e yeniden 2061\'de yaklaşacak. Güneş\'e yaklaşınca buzları buharlaşır ve iki kuyruk oluşur.',
+    veriler: [
+      ['Çekirdek', '≈ 15 × 8 km'],
+      ['Dönüş süresi', '≈ 76 yıl'],
+      ['Güneş\'e en yakın', '0,59 AB (Venüs\'ün içi)'],
+      ['Güneş\'e en uzak', '35 AB (Neptün\'ün ötesi)'],
+      ['Son geçiş', '9 Şubat 1986'],
+      ['Sonraki geçiş', '28 Temmuz 2061'],
+    ],
+    bilgiler: [
+      'Mavi, düz kuyruk iyonlaşmış gazdır ve güneş rüzgârıyla hep Güneş\'in tam tersini gösterir; sarımsı, kavisli kuyruk ise tozdur ve yörüngede geride kalır.',
+      'Edmond Halley, 1531, 1607 ve 1682 gözlemlerinin aynı cisme ait olduğunu anlayıp 1758\'deki dönüşünü önceden bildirdi.',
+      'Giotto sondası 1986\'da çekirdeğini fotoğrafladı: kömürden bile karanlık bir yüzey.',
+      'Mayıs\'taki Eta Akuaritler ve Ekim\'deki Orionitler meteor yağmurları Halley\'in bıraktığı tozdan gelir.',
     ],
   },
 };

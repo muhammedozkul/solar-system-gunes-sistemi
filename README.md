@@ -1,6 +1,10 @@
-# Güneş Sistemi
+# Güneş Sistemi · Solar System
 
 Tarayıcıda çalışan, gezilebilir 3B Güneş Sistemi. Saf HTML, CSS ve JavaScript ile yazıldı; derleme adımı, npm ya da framework yok. Üç boyutlu çizim için depoyla birlikte gelen Three.js (r160) kullanılır, internet bağlantısı gerekmez.
+
+🪐 **Tarayıcıda aç:** https://muhammedozkul.github.io/solar-system-gunes-sistemi/
+
+Kurulum gerekmez; Windows, macOS ve telefonda Chrome, Edge, Safari ya da Firefox ile açılır.
 
 ## Çalıştırma
 
@@ -9,7 +13,7 @@ Tarayıcıda çalışan, gezilebilir 3B Güneş Sistemi. Saf HTML, CSS ve JavaSc
 **Elle:**
 
 ```bash
-cd gunes-sistemi
+cd solar-system-gunes-sistemi
 python3 -m http.server 8773
 # sonra tarayıcıda: http://localhost:8773
 ```

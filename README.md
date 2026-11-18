@@ -1,93 +1,95 @@
-# Güneş Sistemi · Solar System
+**English** · [Türkçe](README.tr.md)
 
-Tarayıcıda çalışan, gezilebilir 3B Güneş Sistemi. Saf HTML, CSS ve JavaScript ile yazıldı; derleme adımı, npm ya da framework yok. Üç boyutlu çizim için depoyla birlikte gelen Three.js (r160) kullanılır, internet bağlantısı gerekmez.
+# Solar System · Güneş Sistemi
 
-🪐 **Tarayıcıda aç:** https://muhammedozkul.github.io/solar-system-gunes-sistemi/
+An explorable 3D Solar System that runs in the browser. Written in plain HTML, CSS and JavaScript; no build step, no npm, no framework. 3D rendering uses Three.js (r160), which ships with the repository, so no internet connection is needed.
 
-Kurulum gerekmez; Windows, macOS ve telefonda Chrome, Edge, Safari ya da Firefox ile açılır.
+🪐 **Open in your browser:** https://muhammedozkul.github.io/solar-system-gunes-sistemi/
 
-## Çalıştırma
+No installation required; works in Chrome, Edge, Safari or Firefox on Windows, macOS and phones.
 
-**macOS:** `Güneş Sistemi.command` dosyasına çift tıkla. Yerel bir sunucu başlar ve tarayıcıda `http://localhost:8773` açılır. Sunucu zaten çalışıyorsa yalnızca tarayıcı açılır. Kapatmak için açılan Terminal penceresinde `Ctrl+C`.
+## Running it
 
-**Windows:** `Güneş Sistemi.bat` dosyasına çift tıkla. [Python 3](https://www.python.org) kurulu olmalı (kurulumda "Add python.exe to PATH" kutusunu işaretle). Kapatmak için açılan siyah pencereyi kapat. Python kurmak istemiyorsan yukarıdaki canlı bağlantıyı kullan.
+**macOS:** Double-click `Güneş Sistemi.command`. A local server starts and `http://localhost:8773` opens in the browser. If the server is already running, only the browser opens. To stop it, press `Ctrl+C` in the Terminal window that opened.
 
-**Elle:**
+**Windows:** Double-click `Güneş Sistemi.bat`. [Python 3](https://www.python.org) must be installed (tick "Add python.exe to PATH" during setup). To stop it, close the black window that opened. If you don't want to install Python, use the live link above.
+
+**Manually:**
 
 ```bash
 cd solar-system-gunes-sistemi
 python3 -m http.server 8773
-# sonra tarayıcıda: http://localhost:8773
+# then in the browser: http://localhost:8773
 ```
 
-ES modülleri `file://` üzerinden yüklenemediği için `index.html` dosyasını doğrudan açmak çalışmaz; yerel sunucu şarttır.
+Opening `index.html` directly does not work, because ES modules can't be loaded over `file://`; a local server is required.
 
-## Kullanım
+## Controls
 
-| Eylem | Nasıl |
+| Action | How |
 | --- | --- |
-| Döndür | Sürükle |
-| Yakınlaş / uzaklaş | Tekerlek ya da iki parmak |
-| Kaydır (genel görünümde) | Sağ tık ile sürükle |
-| Bir gövdeye git | Gövdeye, etiketine ya da alttaki menüye tıkla |
-| Güneş / gezegenler | `0` / `1`–`8` |
-| Plüton / Halley | `9` / `H` |
-| Önceki / sonraki | `←` / `→` |
-| Duraklat / oynat | `Boşluk` |
-| Genel görünüm | `Esc` |
-| Yörüngeler / etiketler | `O` / `L` |
-| Otomatik tur | `T` |
-| Dil (Türkçe / İngilizce) | Sağ üstteki TR · EN düğmesi; seçim hatırlanır, ilk açılışta tarayıcı diline göre seçilir |
+| Rotate | Drag |
+| Zoom in / out | Mouse wheel or two fingers |
+| Pan (overview) | Right-click drag |
+| Fly to a body | Click the body, its label or the menu at the bottom |
+| Sun / planets | `0` / `1`–`8` |
+| Pluto / Halley | `9` / `H` |
+| Previous / next | `←` / `→` |
+| Pause / play | `Space` |
+| Overview | `Esc` |
+| Orbits / labels | `O` / `L` |
+| Auto tour | `T` |
+| Language (Turkish / English) | TR · EN button at the top right; the choice is remembered, and on first visit it follows the browser language |
 
-Bir gövdeye gidildiğinde kamera onu yörüngesinde takip eder; bu sırada çevresinde dönüp yakınlaşabilirsin. Gezegenlerin bilgi panelindeki çiplerle uydulara (Ay, Phobos, Deimos, Io, Europa, Ganymede, Callisto, Titan, Charon) geçebilirsin.
+When you fly to a body, the camera follows it along its orbit; you can still rotate around it and zoom. Chips in a planet's info panel take you to its moons (Moon, Phobos, Deimos, Io, Europa, Ganymede, Callisto, Titan, Charon).
 
-**Paylaşılabilir bağlantı:** Bir gövde seçilince adres çubuğu değişir (ör. `…/#saturn`, `…/#halley`). Bu bağlantıyı açan kişi doğrudan o gövdeye uçar.
+**Shareable links:** Selecting a body updates the address bar (e.g. `…/#saturn`, `…/#halley`). Anyone opening that link flies straight to that body.
 
-**Telefonda:** Bilgi paneli alttan küçük açılır, gövde görünür kalır. Yukarı kaydır ya da metne dokun: genişler. Aşağı kaydır: önce küçülür, sonra kapanır.
+**On phones:** The info panel opens small from the bottom so the body stays visible. Swipe up or tap the text to expand it. Swipe down to shrink it, then close it.
 
-## Neler var
+## Features
 
-- Kaynayan yüzeyli, koronalı Güneş (özel shader + bloom)
-- Dünya: gece tarafında şehir ışıkları, okyanus parlaması, normal map, ayrı dönen bulutlar ve bulut gölgeleri, atmosfer parıltısı
-- Satürn: dokulu halka, halkanın gezegene ve gezegenin halkaya düşen gölgesi
-- Gerçek eksen eğiklikleri, dış merkezli ve eğik yörüngeler, gerçek periyot oranları
-- Plüton ve uydusu Charon (cüce gezegen; basık, Neptün'ün yörüngesini kesen yörünge)
-- Halley Kuyruklu Yıldızı: gerçek yörünge öğeleriyle bugünkü konumunda (≈ 35 AB). Güneş'e yaklaşınca koma ve iki kuyruk belirir: Güneş'in tam tersini gösteren mavi iyon kuyruğu ve yörüngede geride kalarak kavis çizen toz kuyruğu. Paneldeki **Güneş'e yaklaşınca izle** düğmesi zamanı 2061 geçişinin hemen öncesine taşır.
-- Asteroit kuşağı (3.000 kaya, InstancedMesh), Kuiper kuşağı, Samanyolu ve titreşen yıldızlar
-- Zaman denetimi (1 saat/sn – 2 yıl/sn), otomatik tur, Türkçe ve İngilizce arayüz ile bilgi panelleri
+- A boiling, corona-wrapped Sun (custom shader + bloom)
+- Earth: city lights on the night side, ocean glint, normal map, separately rotating clouds with cloud shadows, atmospheric glow
+- Saturn: textured rings, ring shadow on the planet and planet shadow on the rings
+- Real axial tilts, eccentric and inclined orbits, real period ratios
+- Pluto and its moon Charon (dwarf planet; an eccentric orbit that crosses Neptune's)
+- Halley's Comet: at its current position (≈ 35 AU) from real orbital elements. As it nears the Sun, a coma and two tails appear: a blue ion tail pointing directly away from the Sun and a curved dust tail that lags along the orbit. The **Watch it approach the Sun** button in the panel jumps time to just before its 2061 passage.
+- Asteroid belt (3,000 rocks, InstancedMesh), Kuiper belt, the Milky Way and twinkling stars
+- Time control (1 hour/s – 2 years/s), auto tour, Turkish and English interface and info panels
 
-## Ölçek hakkında
+## About the scale
 
-Gerçek oranlarla gezegenler ekranda görünmez; bu yüzden ölçek sıkıştırılmıştır, sıra ve büyüklük ilişkileri korunur:
+At true proportions the planets would be invisible on screen, so the scale is compressed while order and size relationships are preserved:
 
-- Yarıçap: `(R / R_dünya)^0,55` (Dünya = 1 birim, Jüpiter ≈ 3,7 birim; Güneş 9 birime sabitlenmiştir)
-- Güneş'e uzaklık: `18 + 56·√AB`
-- Yörünge periyotları gerçektir. Kendi ekseninde dönüş ve uydu hareketi, yüksek hızlarda titremeye dönüşmemesi için sınırlı hızla ilerler; uydu periyotları karekökle sıkıştırılmıştır.
-- Başlangıçta gezegenler, J2000 ortalama yörünge öğelerinden hesaplanan yaklaşık bugünkü konumlarındadır. Konumlar Kepler denkleminin sayısal çözümüyle bulunur.
-- Halley'in çok basık yörüngesinde konum gerçek AB cinsinden hesaplanır, yalnızca Güneş'e uzaklık aynı formülle sıkıştırılır; çekirdek görünür kalsın diye büyütülmüştür.
-- Solar System Scope'ta Plüton dokusu yoktur; Plüton ve Charon renklendirilmiş Ay dokusuyla gösterilir.
+- Radius: `(R / R_earth)^0.55` (Earth = 1 unit, Jupiter ≈ 3.7 units; the Sun is fixed at 9 units)
+- Distance from the Sun: `18 + 56·√AU`
+- Orbital periods are real. Spin and moon motion advance at a capped rate so they don't turn into flicker at high speeds; moon periods are compressed with a square root.
+- At start, planets are at their approximate current positions, computed from J2000 mean orbital elements. Positions come from a numerical solution of Kepler's equation.
+- On Halley's very eccentric orbit, position is computed in real AU and only the distance from the Sun is compressed with the same formula; the nucleus is enlarged so it stays visible.
+- Solar System Scope has no Pluto texture; Pluto and Charon are shown with a tinted Moon texture.
 
-## Dosya yapısı
+## File structure
 
 ```
-index.html            Sayfa iskeleti ve importmap
-css/style.css         Arayüz stilleri
-js/main.js            Renderer, postprocessing, kamera uçuşu/takibi, etkileşim
-js/scene.js           Güneş, gezegenler, uydular, halkalar, kuşaklar, gökyüzü
-js/shaders.js         Özel GLSL shader'lar
-js/ui.js              Menü, bilgi paneli, zaman denetimi, yardım
-js/i18n.js            Dil seçimi, t() çeviri işlevi, sayı biçimleme
-js/metin-tr.js        Türkçe arayüz ve gövde metinleri
-js/metin-en.js        İngilizce arayüz ve gövde metinleri
-js/data.js            Gezegen, Plüton ve Halley verileri (sayısal), ölçek formülleri
-textures/             Gezegen dokuları
+index.html            Page skeleton and importmap
+css/style.css         Interface styles
+js/main.js            Renderer, postprocessing, camera flight/follow, interaction
+js/scene.js           Sun, planets, moons, rings, belts, sky
+js/shaders.js         Custom GLSL shaders
+js/ui.js              Menu, info panel, time control, help
+js/i18n.js            Language selection, t() translation function, number formatting
+js/metin-tr.js        Turkish interface and body texts
+js/metin-en.js        English interface and body texts
+js/data.js            Planet, Pluto and Halley data (numeric), scale formulas
+textures/             Planet textures
 vendor/three/         Three.js r160
 ```
 
-## Kaynaklar
+## Credits
 
-- Dokular: [Solar System Scope](https://www.solarsystemscope.com/textures/) — CC BY 4.0
+- Textures: [Solar System Scope](https://www.solarsystemscope.com/textures/) — CC BY 4.0
 - [Three.js](https://threejs.org) r160 — MIT
-- Simplex gürültüsü: Ian McEwan / Ashima Arts — MIT
-- Fiziksel veriler: NASA Planetary Fact Sheet ve NASA Solar System Exploration
-- Halley yörünge öğeleri: JPL Small-Body Database
+- Simplex noise: Ian McEwan / Ashima Arts — MIT
+- Physical data: NASA Planetary Fact Sheet and NASA Solar System Exploration
+- Halley orbital elements: JPL Small-Body Database

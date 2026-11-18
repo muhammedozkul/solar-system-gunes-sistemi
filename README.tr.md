@@ -8,6 +8,8 @@ Tarayıcıda çalışan, gezilebilir 3B Güneş Sistemi. Saf HTML, CSS ve JavaSc
 
 Kurulum gerekmez; Windows, macOS ve telefonda Chrome, Edge, Safari ya da Firefox ile açılır.
 
+<p align="center"><img src="media/demo.gif" alt="Güneş Sistemi genel görünümünden Satürn'e uçuş" width="720"></p>
+
 ## Çalıştırma
 
 **macOS:** `Güneş Sistemi.command` dosyasına çift tıkla. Yerel bir sunucu başlar ve tarayıcıda `http://localhost:8773` açılır. Sunucu zaten çalışıyorsa yalnızca tarayıcı açılır. Kapatmak için açılan Terminal penceresinde `Ctrl+C`.

@@ -8,6 +8,8 @@ An explorable 3D Solar System that runs in the browser. Written in plain HTML, C
 
 No installation required; works in Chrome, Edge, Safari or Firefox on Windows, macOS and phones.
 
+<p align="center"><img src="media/demo.gif" alt="Flying from the solar system overview to Saturn" width="720"></p>
+
 ## Running it
 
 **macOS:** Double-click `Güneş Sistemi.command`. A local server starts and `http://localhost:8773` opens in the browser. If the server is already running, only the browser opens. To stop it, press `Ctrl+C` in the Terminal window that opened.
